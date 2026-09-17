@@ -1,0 +1,86 @@
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: ${POSTGRES_CONTAINER_NAME:-recommendation-ml-postgres}
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${DB_NAME:-recommendation_ml}
+      POSTGRES_USER: ${DB_USER:-postgres}
+      POSTGRES_PASSWORD: ${DB_PASSWORD:?DB_PASSWORD must be set in .env}
+    ports:
+      - "55432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      # PostgreSQL data never shares a volume with model artifacts or experiment reports.
+    healthcheck:
+      test:
+        [
+          "CMD-SHELL",
+          "pg_isready -U ${DB_USER:-postgres} -d ${DB_NAME:-recommendation_ml}",
+        ]
+      interval: 5s
+      timeout: 5s
+      retries: 12
+
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      # GET /health metadata (app.core.config), threaded through as build args since a
+      # commit/build time is only known at build time, not inside the running container.
+      # Left unset here on purpose -- no default secret or fabricated value is invented;
+      # override at build time with `docker compose build --build-arg SERVICE_COMMIT=... `
+      # or by exporting SERVICE_COMMIT/SERVICE_BUILD_TIME before `docker compose up --build`
+      # (CI normally exports both from its own commit SHA and job clock).
+      args:
+        SERVICE_NAME: ${SERVICE_NAME:-recommendation-ml-service}
+        SERVICE_VERSION: ${SERVICE_VERSION:-1.0.0}
+        SERVICE_COMMIT: ${SERVICE_COMMIT:-unknown}
+        SERVICE_BUILD_TIME: ${SERVICE_BUILD_TIME:-unknown}
+    container_name: ${APP_CONTAINER_NAME:-recommendation-ml-app}
+    restart: on-failure
+    depends_on:
+      postgres:
+        condition: service_healthy
+    env_file:
+      - .env
+    environment:
+      PORT: ${PORT:-3500}
+      SERVICE_NAME: ${SERVICE_NAME:-recommendation-ml-service}
+      # Runtime overrides of the build-time defaults above -- lets an operator correct/set
+      # these without a rebuild (e.g. a redeployed image whose build args were never set).
+      SERVICE_VERSION: ${SERVICE_VERSION:-1.0.0}
+      SERVICE_COMMIT: ${SERVICE_COMMIT:-unknown}
+      SERVICE_BUILD_TIME: ${SERVICE_BUILD_TIME:-unknown}
+      DATABASE_URL: postgresql+psycopg://${DB_USER:-postgres}:${DB_PASSWORD}@postgres:5432/${DB_NAME:-recommendation_ml}
+      MODEL_DIR: /app/models
+      # Session 4 (spec §44-47): experiment configuration. EXPERIMENT_ID/DATASET_VERSION are
+      # optional -- unset by default, only meaningful when actually running a named
+      # experiment via `docker compose exec app python -m scripts.run_experiment ...`.
+      EXPERIMENT_DIR: /app/experiments
+      EXPERIMENT_ID: ${EXPERIMENT_ID:-}
+      DATASET_VERSION: ${DATASET_VERSION:-}
+      # Comparative-experiment algorithm lock (see app/core/config.py, .env.experiment-*.env).
+      # Unset by default -- normal training keeps comparing every candidate model exactly as
+      # before; only a comparative-experiment env file sets this to a single algorithm name.
+      TRAINING_ALGORITHM_LOCK: ${TRAINING_ALGORITHM_LOCK:-}
+    ports:
+      - "${PORT:-3500}:${PORT:-3500}"
+    volumes:
+      - model_data:/app/models
+      # Experiment reports (JSON only, no model binaries -- see app/experiments/report_store.py)
+      # never share a volume with model artifacts or PostgreSQL data.
+      - experiment_data:/app/experiments
+
+volumes:
+  # name: defaults below are exactly what Compose already resolves for this project without
+  # any override (confirmed via `docker compose config` before choosing these defaults) --
+  # adding configurability here changes nothing for the current deployment unless an
+  # operator explicitly sets POSTGRES_VOLUME_NAME/MODEL_VOLUME_NAME. Never delete or rename
+  # an existing named volume merely to "switch" experiments -- that discards real data.
+  postgres_data:
+    name: ${POSTGRES_VOLUME_NAME:-machine-learning_postgres_data}
+  model_data:
+    name: ${MODEL_VOLUME_NAME:-machine-learning_model_data}
+  experiment_data:
+    name: ${EXPERIMENT_VOLUME_NAME:-machine-learning_experiment_data}

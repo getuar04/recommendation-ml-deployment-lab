@@ -1,0 +1,17 @@
+# ClusterIP only -- no Ingress, no LoadBalancer, no TLS, no company hostname. Reached via
+# `kubectl -n rms-lab port-forward svc/<fullname> 3500:3500` during the lab experiments.
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "recommendation-ml-service-lab.fullname" . }}
+  labels:
+    {{- include "recommendation-ml-service-lab.labels" . | nindent 4 }}
+spec:
+  type: {{ .Values.service.type | default "ClusterIP" }}
+  ports:
+    - port: {{ .Values.service.port }}
+      targetPort: {{ .Values.service.targetPort | default .Values.service.port }}
+      protocol: TCP
+      name: http
+  selector:
+    {{- include "recommendation-ml-service-lab.selectorLabels" . | nindent 4 }}

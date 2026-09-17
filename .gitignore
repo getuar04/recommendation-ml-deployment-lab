@@ -1,0 +1,50 @@
+__pycache__/
+.pytest_cache/
+.pytest_tmp/
+.pytest_tmp*/
+.pytest_temp/
+.pytest_temp*/
+/data/pytest-*/
+.mypy_cache/
+.ruff_cache/
+.venv/
+.idea/
+.vscode/
+.env
+*.pyc
+*.pyo
+.coverage
+htmlcov/
+coverage.xml
+*.zip
+*.log
+.DS_Store
+Thumbs.db
+Desktop.ini
+*.tmp
+*.bak
+.claude/
+data/**/*.db
+models/**/*.joblib
+models/model_metadata.json
+models/live_model_metadata.json
+models/content_classifier_metadata.json
+# CatBoost's default local training-log directory (app.ml.algorithm_registry sets
+# allow_writing_files=False for every real fit, but this stays as a defensive backstop).
+catboost_info/
+
+# Local Postman collection + demo request bodies used for manual endpoint testing.
+# Not read by any app/test/CI code -- see tests/test_seed_demo_users.py's comments for the
+# only (non-programmatic) references to these files.
+docs/*.json
+
+# Pytest caches and temporary directories
+.pytest_cache/
+.pytest-temp*/
+.pytest_temp*/
+.pytest_tmp*/
+.pytest-tmp*/
+.pytest-*/
+
+# Local test scratch directories
+.already-seen-suite-*/

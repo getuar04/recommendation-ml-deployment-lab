@@ -1,0 +1,137 @@
+# Helm values for the G2R-EKS production target only (AWS account 279273931756, cluster
+# g2r-eks, namespace g2r-prod, public host api.grrgrrlive.com). Consumed exclusively by
+# `Jenkins.g2r-eks` together with ../inturium-helm-charts/charts/microservice.
+# The dev variant is deploy/values-dev.yaml (never share values between them).
+#
+# No secret value is defined here: DATABASE_URL and INTERNAL_API_KEY are injected from
+# Kubernetes Secrets that must exist in the namespace BEFORE the first Jenkins run
+# (see README "Kubernetes deployment (EKS via Jenkins)").
+
+nameOverride: recommendation-ml-service
+fullnameOverride: recommendation-ml-service
+
+# Single replica on purpose: trained model artifacts are written to the container's own
+# filesystem (MODEL_DIR below) and are not shared between pods. See README for the platform
+# chart change (persistent volume support) required before scaling out.
+replicaCount: 1
+
+image:
+  repository: 279273931756.dkr.ecr.eu-central-1.amazonaws.com/g2r-prod/recommendation-ml-service
+  # Overridden by Jenkins with the immutable "<build>-<sha>-<timestamp>" tag on every deploy.
+  tag: dev
+  pullPolicy: IfNotPresent
+
+# Model artifacts live only in the running container until the microservice chart supports
+# a persistent volume, so node consolidation must not evict this pod behind our backs.
+podAnnotations:
+  karpenter.sh/do-not-disrupt: "true"
+
+service:
+  type: ClusterIP
+  port: 3500
+  targetPort: 3500
+
+# The chart would otherwise inject SPRING_KAFKA_BOOTSTRAP_SERVERS/KAFKA_BOOTSTRAP_SERVERS.
+# This service reads KAFKA_BROKERS (platform-wide naming convention) and its consumer is
+# disabled until a real behaviour topic exists, so the implicit injection is switched off.
+kafka:
+  enabled: false
+
+env:
+  PORT: "3500"
+  # Any value other than local/test makes DATABASE_URL mandatory at startup
+  # (app/core/config.py) -- the app refuses to start against a local-development database
+  # fallback. INTERNAL_API_KEY is no longer required by this service (the X-Internal-API-Key
+  # inbound gate was removed); the secret below is kept only because
+  # app/services/service_clients.py still sends it on OUTBOUND calls to User Behavior
+  # Service/Candidate Service, which independently still expect it.
+  APP_ENV: production
+  SERVICE_NAME: recommendation-ml-service
+  SERVICE_VERSION: "1.0.0"
+  # Both overridden per deploy by Jenkins (--set-string) with the real commit and build time.
+  SERVICE_COMMIT: unknown
+  SERVICE_BUILD_TIME: unknown
+
+  # PostgreSQL: the URL in the secret must point at the datastore Helm release's Service,
+  # i.e. recommendation-ml-service-postgres.g2r-prod.svc.cluster.local:5432 (never a local-development address).
+  DATABASE_URL:
+    valueFrom:
+      secretKeyRef:
+        name: recommendation-ml-service-db
+        key: DATABASE_URL
+  INTERNAL_API_KEY:
+    valueFrom:
+      secretKeyRef:
+        name: recommendation-ml-service-app
+        key: INTERNAL_API_KEY
+
+  # Writable runtime directories created and chown'ed in the Dockerfile.
+  MODEL_DIR: /app/models
+  EXPERIMENT_DIR: /app/experiments
+
+  REQUEST_ID_HEADER: X-Request-ID
+  TRAINING_STALE_LOCK_SECONDS: "1800"
+  PERSONALISED_RECOMMENDATION_MIN_INTERACTIONS: "10"
+  USER_PROFILE_MIN_INTERACTIONS: "1"
+  SESSION_INTENT_STORE: DATABASE
+  COHORT_PREFERENCES_ENABLED: "true"
+  TWO_TOWER_RETRIEVAL_ENABLED: "false"
+
+  # Real-service integration stays LOCAL: no User Behavior Service or Candidate Service with
+  # a verified contract exists on the platform (see app/core/config.py). Switch to REAL and
+  # add UBS_BASE_URL / CANDIDATE_SERVICE_BASE_URL only once those services are deployed.
+  RECOMMENDATION_DATA_MODE: LOCAL
+  UBS_FALLBACK_TO_LOCAL: "true"
+
+  # Optional Kafka behaviour consumer: disabled until the owning team publishes the real
+  # VIDEO behaviour topic (KAFKA_BEHAVIOR_TOPIC has deliberately no default). The broker
+  # address is the platform Kafka of this cluster so enabling it later is a values-only change.
+  KAFKA_BEHAVIOR_ENABLED: "false"
+  KAFKA_BROKERS: kafka.kafka.svc.cluster.local:9092
+  KAFKA_BEHAVIOR_GROUP_ID: recommendation-ml-service
+
+# Exactly one external entry path per service; the app mounts every router under this
+# prefix itself (app/core/config.py API_V1_PREFIX), so no prefix stripping.
+ingress:
+  enabled: true
+  className: traefik
+  hosts:
+    - host: api.grrgrrlive.com
+      paths:
+        - path: /api/v1/recommendation-ml-service
+          pathType: Prefix
+  stripPrefix:
+    enabled: false
+    prefixes: []
+  tls: []
+
+# Training (RandomForest/XGBoost/LightGBM/CatBoost comparison) runs in-process, so the limits
+# are deliberately above a plain HTTP service.
+resources:
+  requests:
+    cpu: 250m
+    memory: 512Mi
+  limits:
+    cpu: "2"
+    memory: 2Gi
+
+# GET /health answers 503 only when PostgreSQL is unreachable. Liveness is kept tolerant on
+# purpose: a container restart discards the in-container model artifacts, so a short
+# database blip must not cost a trained model.
+readinessProbe:
+  httpGet:
+    path: /api/v1/recommendation-ml-service/health
+    port: 3500
+  initialDelaySeconds: 10
+  periodSeconds: 10
+  timeoutSeconds: 3
+  failureThreshold: 6
+
+livenessProbe:
+  httpGet:
+    path: /api/v1/recommendation-ml-service/health
+    port: 3500
+  initialDelaySeconds: 30
+  periodSeconds: 30
+  timeoutSeconds: 5
+  failureThreshold: 6

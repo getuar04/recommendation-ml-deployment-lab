@@ -1,0 +1,52 @@
+{
+  "runId": "d27f5b927717427a",
+  "experimentId": "small-balanced-v1",
+  "datasetVersion": "small-balanced-v1",
+  "modelType": "VIDEO",
+  "synthetic": true,
+  "startedAt": "2026-07-30T11:32:04.618958+00:00",
+  "status": "SUCCEEDED",
+  "completedAt": "2026-07-30T11:32:15.245437+00:00",
+  "modelVersion": "recommendation-poc-20260730113214",
+  "selectedModel": "RandomForestClassifier",
+  "decisionThreshold": 0.36533866288342165,
+  "trainingDurationSeconds": 6.877,
+  "datasetGenerationSeconds": 0.55,
+  "totalExperimentSeconds": 10.627,
+  "metrics": {
+    "accuracy": 0.521739,
+    "precision": 0.485437,
+    "recall": 0.961538,
+    "f1Score": 0.645161,
+    "prAuc": 0.751926,
+    "rocAuc": 0.794719
+  },
+  "rankingMetrics": {
+    "precisionAt5": 0.333333,
+    "recallAt10": 1.0,
+    "ndcgAt10": 0.938488
+  },
+  "dataset": {
+    "totalInteractions": 1199,
+    "labelledSamples": 582,
+    "neutralRowsExcluded": 617,
+    "positiveSamples": 269,
+    "negativeSamples": 313,
+    "positiveRatio": 0.4622,
+    "negativeRatio": 0.5378,
+    "uniqueUsers": 25,
+    "uniqueContents": 40,
+    "uniqueCreators": 8,
+    "earliestTimestamp": "2026-05-01T13:22:48.753231",
+    "latestTimestamp": "2026-07-30T09:47:08.753231"
+  },
+  "artifactSizeBytes": 1210291,
+  "datasetSource": {
+    "type": "database",
+    "synthetic": true,
+    "syntheticRowCount": 1199,
+    "totalRowCount": 1199,
+    "note": "Rows with event_id prefix 'syn-' come from scripts/generate_synthetic_data.py; a nonzero syntheticRowCount means at least part of this training run is not backed by real user behavior and metrics must not be presented as production evidence."
+  },
+  "warnings": []
+}

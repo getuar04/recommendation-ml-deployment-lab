@@ -1,0 +1,61 @@
+# PostgreSQL datastore for recommendation-ml-service in the G2R-EKS production target only
+# (cluster g2r-eks, namespace g2r-prod). Chart: inturium-helm-charts/charts/postgresql.
+#
+# This release is platform provisioning, NOT part of the Jenkins app deploy:
+#   helm upgrade --install recommendation-ml-service-postgres \
+#     ./inturium-helm-charts/charts/postgresql --namespace g2r-prod \
+#     --values deploy/datastores/postgresql-values-g2r-eks.yaml --wait --timeout 10m
+#
+# The Secret recommendation-ml-service-db must already exist in the namespace with the keys
+# DATABASE_URL, DATABASE_USERNAME and DATABASE_PASSWORD; the chart reads the password from
+# DATABASE_PASSWORD, the application reads DATABASE_URL. No value is ever stored here.
+# Schema objects are created by the app's Alembic migrations (Jenkins "Run Migrations"), not
+# by the chart.
+
+fullnameOverride: recommendation-ml-service-postgres
+
+image:
+  registry: docker.io
+  repository: postgres
+  tag: "16"
+  pullPolicy: IfNotPresent
+
+replicaCount: 1
+
+postgresql:
+  database: recommendation_ml
+  username: recommendationml
+  existingSecret: recommendation-ml-service-db
+  passwordKey: DATABASE_PASSWORD
+
+persistence:
+  enabled: true
+  storageClass: gp3
+  size: 8Gi
+
+resources:
+  requests:
+    cpu: 250m
+    memory: 512Mi
+  limits:
+    cpu: "1"
+    memory: 1Gi
+
+service:
+  ports:
+    postgresql: 5432
+
+metrics:
+  enabled: false
+  serviceMonitor:
+    enabled: false
+
+backup:
+  enabled: false
+
+# Backups are configured centrally by the platform team.
+
+# Karpenter must not move this pod on its own (consolidation/drift): a relocation aborts
+# open connections and sessions. Scaling out stays possible.
+podAnnotations:
+  karpenter.sh/do-not-disrupt: "true"

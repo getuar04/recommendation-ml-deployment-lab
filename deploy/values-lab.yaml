@@ -1,0 +1,125 @@
+# Helm values for the LOCAL deployment lab ONLY (Docker Desktop Kubernetes, context
+# `docker-desktop`, namespace `rms-lab`). This is the lab equivalent of deploy/values-dev.yaml
+# and deploy/values-g2r-eks.yaml -- same structure and mechanics, company-bound values
+# replaced with local-only equivalents. Consumed by `Jenkins.lab` (not executed yet) together
+# with the local chart at charts/recommendation-ml-service-lab -- a minimal, hand-written
+# chart that never contacts or depends on the company's private inturium-helm-charts repo.
+#
+# No secret value is defined here: DATABASE_URL and INTERNAL_API_KEY are injected from
+# Kubernetes Secrets that must exist in the `rms-lab` namespace BEFORE any Helm deploy
+# (mirrors the production/dev secretKeyRef mechanism exactly -- only the Secret names and
+# namespace are lab-local).
+
+nameOverride: recommendation-ml-service-lab
+fullnameOverride: recommendation-ml-service-lab
+
+# Single replica on purpose: trained model artifacts are written to the container's own
+# filesystem (MODEL_DIR below) and are not shared between pods. Same constraint as
+# production/dev -- kept here so the lab reproduces the real rolling-update behavior.
+replicaCount: 1
+
+image:
+  # Local image built with `docker build` on the Docker Desktop daemon -- no registry.
+  repository: recommendation-ml-service-lab
+  tag: dev
+  # Never attempt a registry pull for the lab image: it only ever exists in the local
+  # Docker Desktop daemon that Kubernetes shares.
+  pullPolicy: Never
+
+service:
+  type: ClusterIP
+  port: 3500
+  targetPort: 3500
+
+# The chart would otherwise inject SPRING_KAFKA_BOOTSTRAP_SERVERS/KAFKA_BOOTSTRAP_SERVERS.
+# This service reads KAFKA_BROKERS and its consumer is disabled -- same as production/dev.
+kafka:
+  enabled: false
+
+env:
+  PORT: "3500"
+  # Any value other than local/test makes DATABASE_URL mandatory at startup
+  # (app/core/config.py), matching production/dev behavior so the lab reproduces the real
+  # "refuses to start without a real database" mechanic instead of silently falling back.
+  APP_ENV: lab
+  SERVICE_NAME: recommendation-ml-service-lab
+  SERVICE_VERSION: "1.0.0"
+  # Both overridden per deploy by Jenkins (--set-string) with the real commit and build time,
+  # same mechanic as production/dev.
+  SERVICE_COMMIT: unknown
+  SERVICE_BUILD_TIME: unknown
+
+  # PostgreSQL: the URL in the secret must point at the lab datastore Helm release's Service,
+  # i.e. rms-lab-postgres.rms-lab.svc.cluster.local:5432 (never a company address).
+  DATABASE_URL:
+    valueFrom:
+      secretKeyRef:
+        name: rms-lab-db
+        key: DATABASE_URL
+  INTERNAL_API_KEY:
+    valueFrom:
+      secretKeyRef:
+        name: rms-lab-app
+        key: INTERNAL_API_KEY
+
+  # Writable runtime directories created and chown'ed in the Dockerfile.
+  MODEL_DIR: /app/models
+  EXPERIMENT_DIR: /app/experiments
+
+  REQUEST_ID_HEADER: X-Request-ID
+  TRAINING_STALE_LOCK_SECONDS: "1800"
+  PERSONALISED_RECOMMENDATION_MIN_INTERACTIONS: "10"
+  USER_PROFILE_MIN_INTERACTIONS: "1"
+  SESSION_INTENT_STORE: DATABASE
+  COHORT_PREFERENCES_ENABLED: "true"
+  TWO_TOWER_RETRIEVAL_ENABLED: "false"
+
+  RECOMMENDATION_DATA_MODE: LOCAL
+  UBS_FALLBACK_TO_LOCAL: "true"
+
+  # Optional Kafka behaviour consumer: disabled, and no lab Kafka broker exists yet. Left
+  # unset (rather than pointing at a fabricated host) until a local Kafka is provisioned in a
+  # later phase -- enabling it later is a values-only change, same as production/dev.
+  KAFKA_BEHAVIOR_ENABLED: "false"
+  KAFKA_BROKERS: ""
+  KAFKA_BEHAVIOR_GROUP_ID: recommendation-ml-service-lab
+
+# No ingress/hostname/TLS in the lab: reach the service via `kubectl port-forward` or
+# `kubectl -n rms-lab port-forward svc/recommendation-ml-service-lab 3500:3500`, never a
+# company hostname or ingress controller.
+ingress:
+  enabled: false
+  className: ""
+  hosts: []
+  stripPrefix:
+    enabled: false
+    prefixes: []
+  tls: []
+
+resources:
+  requests:
+    cpu: 250m
+    memory: 512Mi
+  limits:
+    cpu: "2"
+    memory: 2Gi
+
+# Probe mechanics/timings intentionally UNCHANGED from production/dev for this baseline --
+# we want to reproduce current diagnostic behavior before experimenting with it.
+readinessProbe:
+  httpGet:
+    path: /api/v1/recommendation-ml-service/health
+    port: 3500
+  initialDelaySeconds: 10
+  periodSeconds: 10
+  timeoutSeconds: 3
+  failureThreshold: 6
+
+livenessProbe:
+  httpGet:
+    path: /api/v1/recommendation-ml-service/health
+    port: 3500
+  initialDelaySeconds: 30
+  periodSeconds: 30
+  timeoutSeconds: 5
+  failureThreshold: 6

@@ -1,0 +1,52 @@
+{
+  "runId": "afbf7bce493d4b02",
+  "experimentId": "medium-realistic-synthetic-v1",
+  "datasetVersion": "medium-realistic-synthetic-v1",
+  "modelType": "VIDEO",
+  "synthetic": true,
+  "startedAt": "2026-07-30T11:28:00.744859+00:00",
+  "status": "SUCCEEDED",
+  "completedAt": "2026-07-30T11:28:23.394726+00:00",
+  "modelVersion": "recommendation-poc-20260730112823",
+  "selectedModel": "LogisticRegression",
+  "decisionThreshold": 0.25034835923967796,
+  "trainingDurationSeconds": 11.159,
+  "datasetGenerationSeconds": 8.318,
+  "totalExperimentSeconds": 22.65,
+  "metrics": {
+    "accuracy": 0.424058,
+    "precision": 0.371105,
+    "recall": 0.89726,
+    "f1Score": 0.52505,
+    "prAuc": 0.508144,
+    "rocAuc": 0.639921
+  },
+  "rankingMetrics": {
+    "precisionAt5": 0.323024,
+    "recallAt10": 1.0,
+    "ndcgAt10": 0.914385
+  },
+  "dataset": {
+    "totalInteractions": 8994,
+    "labelledSamples": 4151,
+    "neutralRowsExcluded": 4843,
+    "positiveSamples": 1371,
+    "negativeSamples": 2780,
+    "positiveRatio": 0.3303,
+    "negativeRatio": 0.6697,
+    "uniqueUsers": 150,
+    "uniqueContents": 350,
+    "uniqueCreators": 25,
+    "earliestTimestamp": "2026-05-01T12:54:50.849244",
+    "latestTimestamp": "2026-07-30T11:14:12.849244"
+  },
+  "artifactSizeBytes": 6547,
+  "datasetSource": {
+    "type": "database",
+    "synthetic": true,
+    "syntheticRowCount": 8994,
+    "totalRowCount": 8994,
+    "note": "Rows with event_id prefix 'syn-' come from scripts/generate_synthetic_data.py; a nonzero syntheticRowCount means at least part of this training run is not backed by real user behavior and metrics must not be presented as production evidence."
+  },
+  "warnings": []
+}

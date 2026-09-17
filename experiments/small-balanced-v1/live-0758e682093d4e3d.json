@@ -1,0 +1,50 @@
+{
+  "runId": "0758e682093d4e3d",
+  "experimentId": "small-balanced-v1",
+  "datasetVersion": "small-balanced-v1",
+  "modelType": "LIVE",
+  "reportKind": "TRAINING",
+  "synthetic": true,
+  "startedAt": "2026-07-30T12:28:33.067609+00:00",
+  "status": "SUCCEEDED",
+  "completedAt": "2026-07-30T12:28:46.155273+00:00",
+  "modelVersion": "live-recommendation-poc-20260730122846",
+  "selectedModel": "LogisticRegression",
+  "decisionThreshold": 0.4639692999715468,
+  "trainingDurationSeconds": 9.272,
+  "datasetGenerationSeconds": 0.08,
+  "totalExperimentSeconds": 13.088,
+  "metrics": {
+    "accuracy": 0.875706,
+    "precision": 0.87931,
+    "recall": 0.993506,
+    "f1Score": 0.932927,
+    "prAuc": 0.969706,
+    "rocAuc": 0.826934
+  },
+  "rankingMetrics": {
+    "precisionAt5": 0.865385,
+    "recallAt10": 1.0,
+    "ndcgAt10": 0.995013
+  },
+  "dataset": {
+    "isSynthetic": true,
+    "totalRows": 1079,
+    "labelledSamples": 1079,
+    "neutralRowsExcluded": 0,
+    "positiveSamples": 937,
+    "negativeSamples": 142,
+    "positiveRatio": 0.8684,
+    "negativeRatio": 0.1316,
+    "earliestTimestamp": "2026-01-01T00:00:00+00:00",
+    "latestTimestamp": "2026-01-01T19:59:00+00:00"
+  },
+  "artifactSizeBytes": 6135,
+  "datasetSource": {
+    "type": "synthetic",
+    "synthetic": true,
+    "totalRowCount": 1079,
+    "note": "Generated deterministically by app.ml.live_synthetic_data (no real LIVE behavior log exists yet); these metrics describe pipeline correctness, not real user preference, and must not be presented as production evidence."
+  },
+  "warnings": []
+}

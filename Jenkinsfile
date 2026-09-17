@@ -1,0 +1,363 @@
+// Dev pipeline: builds, tests and deploys recommendation-ml-service to the EXISTING dev
+// target only (AWS 176530481923, cluster eks-g2r-dev-eu, namespace g2r-dev) using
+// deploy/values-dev.yaml. The G2R-EKS production pipeline is Jenkins.g2r-eks and must stay
+// structurally identical (same tests, same checks); only target-bound values differ.
+//
+// Jenkins only deploys the app: it never provisions namespaces, ECR repositories,
+// datastores or secrets, and it never reads Kubernetes Secrets. Everything it needs must
+// exist beforehand (see README "Kubernetes deployment (EKS via Jenkins)").
+pipeline {
+    options {
+        skipDefaultCheckout(true)
+    }
+
+    agent {
+        kubernetes {
+            retries 2
+            yaml '''
+apiVersion: v1
+kind: Pod
+metadata:
+  annotations:
+    cluster-autoscaler.kubernetes.io/safe-to-evict: "false"
+    karpenter.sh/do-not-disrupt: "true"
+spec:
+  serviceAccountName: jenkins
+  containers:
+    - name: python
+      image: python:3.12-slim
+      command:
+        - cat
+      tty: true
+      resources:
+        requests:
+          cpu: "500m"
+          memory: "1Gi"
+          ephemeral-storage: "3Gi"
+        limits:
+          cpu: "2"
+          memory: "4Gi"
+          ephemeral-storage: "8Gi"
+    - name: kaniko
+      # The runtime image carries ~1.5 GB of ML wheels; Kaniko keeps layer snapshots in
+      # memory, so it needs far more than a Node/JVM build (build 2 was OOMKilled at 3Gi).
+      image: gcr.io/kaniko-project/executor:debug
+      command:
+        - cat
+      tty: true
+      resources:
+        requests:
+          cpu: "500m"
+          memory: "2Gi"
+          ephemeral-storage: "4Gi"
+        limits:
+          cpu: "2"
+          memory: "6Gi"
+          ephemeral-storage: "12Gi"
+    - name: tools
+      image: alpine:3.20
+      command:
+        - cat
+      tty: true
+      resources:
+        requests:
+          cpu: "100m"
+          memory: "256Mi"
+          ephemeral-storage: "512Mi"
+        limits:
+          cpu: "500m"
+          memory: "512Mi"
+          ephemeral-storage: "1Gi"
+'''
+        }
+    }
+
+    environment {
+        AWS_REGION = 'eu-central-1'
+        AWS_ACCOUNT_ID = '176530481923'
+        ECR_REGISTRY = "${AWS_ACCOUNT_ID}.dkr.ecr.${AWS_REGION}.amazonaws.com"
+        ECR_REPOSITORY = 'g2r-dev/recommendation-ml-service'
+        IMAGE_REPOSITORY = "${ECR_REGISTRY}/${ECR_REPOSITORY}"
+        SERVICE_NAME = 'recommendation-ml-service'
+        K8S_NAMESPACE = 'g2r-dev'
+        PUBLIC_API_HOST = 'api.g2r-inturium.com'
+        STORAGE_CLASS = 'gp3-auto'
+        HELM_REPO_URL = 'ssh://git@inturium-dev.com:2222/inturium-global/inturium-helm-charts.git'
+        HELM_REPO_DIR = 'inturium-helm-charts'
+        APP_HELM_CHART = './inturium-helm-charts/charts/microservice'
+        APP_VALUES_FILE = 'deploy/values-dev.yaml'
+        POSTGRES_CHART = './inturium-helm-charts/charts/postgresql'
+        POSTGRES_VALUES_FILE = 'deploy/datastores/postgresql-values-dev.yaml'
+        POSTGRES_SERVICE_NAME = 'recommendation-ml-service-postgres'
+        DB_SECRET_NAME = 'recommendation-ml-service-db'
+        APP_SECRET_NAME = 'recommendation-ml-service-app'
+        PIP_DISABLE_PIP_VERSION_CHECK = '1'
+    }
+
+    stages {
+        stage('Checkout') {
+            steps {
+                container('jnlp') {
+                    sh '''
+                        set -eu
+                        mkdir -p ~/.ssh
+                        chmod 700 ~/.ssh
+                        ssh-keyscan -t ed25519 -p 2222 inturium-dev.com > ~/.ssh/known_hosts
+                        chmod 644 ~/.ssh/known_hosts
+                    '''
+                    checkout scm
+                }
+                script {
+                    env.GIT_SSH_CREDENTIALS_ID = scm.userRemoteConfigs[0].credentialsId
+                }
+                container('tools') {
+                    sh 'apk add --no-cache git openssh-client'
+                    withCredentials([
+                        sshUserPrivateKey(
+                            credentialsId: env.GIT_SSH_CREDENTIALS_ID,
+                            keyFileVariable: 'HELM_REPO_SSH_KEY'
+                        )
+                    ]) {
+                        sh '''
+                            set -eu
+
+                            mkdir -p ~/.ssh
+                            chmod 700 ~/.ssh
+                            ssh-keyscan -t ed25519 -p 2222 inturium-dev.com > ~/.ssh/known_hosts
+                            chmod 644 ~/.ssh/known_hosts
+
+                            rm -rf "${HELM_REPO_DIR}"
+                            GIT_SSH_COMMAND="ssh -i ${HELM_REPO_SSH_KEY} -o IdentitiesOnly=yes -o StrictHostKeyChecking=yes -o UserKnownHostsFile=${HOME}/.ssh/known_hosts" \
+                              git clone "${HELM_REPO_URL}" "${HELM_REPO_DIR}"
+                        '''
+                    }
+                }
+            }
+        }
+
+        stage('Validate Platform Inputs') {
+            steps {
+                container('tools') {
+                    sh '''
+                        set -eu
+
+                        apk add --no-cache aws-cli helm kubectl
+
+                        for required_file in Dockerfile .dockerignore alembic.ini requirements.txt "${APP_VALUES_FILE}" "${POSTGRES_VALUES_FILE}"; do
+                          test -f "${required_file}" || {
+                            echo "Required file ${required_file} is missing."
+                            exit 1
+                          }
+                        done
+
+                        test -d "${APP_HELM_CHART}" || {
+                          echo "App Helm chart ${APP_HELM_CHART} is missing in ${HELM_REPO_DIR}."
+                          exit 1
+                        }
+                        test -d "${POSTGRES_CHART}" || {
+                          echo "PostgreSQL Helm chart ${POSTGRES_CHART} is missing in ${HELM_REPO_DIR}."
+                          exit 1
+                        }
+
+                        # Static configuration check: no local-only endpoints may reach the cluster.
+                        if grep -nE 'local[h]ost|127[.]0[.]0[.]1|0[.]0[.]0[.]0|host[.]docker[.]internal|@(postgres|db|database)[:/]' \
+                          "${APP_VALUES_FILE}" "${POSTGRES_VALUES_FILE}"; then
+                          echo "Deployment values contain a local-only endpoint. Fix the values file; do not deploy."
+                          exit 1
+                        fi
+
+                        # Cross-cluster guard: every cluster-bound value must belong to THIS target.
+                        if grep -oE '[0-9]{12}' "${APP_VALUES_FILE}" "${POSTGRES_VALUES_FILE}" | cut -d: -f2 | grep -vx "${AWS_ACCOUNT_ID}"; then
+                          echo "A foreign AWS account id appears in the values files."
+                          exit 1
+                        fi
+                        grep -qE "^[[:space:]]*repository:[[:space:]]*${IMAGE_REPOSITORY}[[:space:]]*$" "${APP_VALUES_FILE}" || {
+                          echo "${APP_VALUES_FILE} does not reference image repository ${IMAGE_REPOSITORY}."
+                          exit 1
+                        }
+                        if grep -oE 'api[.][a-z0-9.-]+' "${APP_VALUES_FILE}" | grep -vx "${PUBLIC_API_HOST}"; then
+                          echo "${APP_VALUES_FILE} references a public API host other than ${PUBLIC_API_HOST}."
+                          exit 1
+                        fi
+                        if grep -oE '[.]g2r-[a-z]+[.]svc[.]cluster[.]local' "${APP_VALUES_FILE}" "${POSTGRES_VALUES_FILE}" | cut -d: -f2 | grep -vx "[.]${K8S_NAMESPACE}[.]svc[.]cluster[.]local"; then
+                          echo "A service DNS name outside namespace ${K8S_NAMESPACE} appears in the values files."
+                          exit 1
+                        fi
+                        if grep -E '^[[:space:]]*storageClass:' "${POSTGRES_VALUES_FILE}" | grep -vE "storageClass:[[:space:]]*${STORAGE_CLASS}[[:space:]]*$"; then
+                          echo "${POSTGRES_VALUES_FILE} must use storageClass ${STORAGE_CLASS}."
+                          exit 1
+                        fi
+
+                        helm lint "${APP_HELM_CHART}" --values "${APP_VALUES_FILE}"
+                        helm lint "${POSTGRES_CHART}" --values "${POSTGRES_VALUES_FILE}"
+
+                        # ECR repositories are platform resources: verify only, never create.
+                        aws ecr describe-repositories \
+                          --region "${AWS_REGION}" \
+                          --repository-names "${ECR_REPOSITORY}" >/dev/null 2>&1 || {
+                            echo "ECR repository ${ECR_REPOSITORY} is missing or inaccessible in account ${AWS_ACCOUNT_ID}. Provision it outside Jenkins."
+                            exit 1
+                          }
+                    '''
+                }
+            }
+        }
+
+        stage('Test') {
+            steps {
+                container('python') {
+                    sh '''
+                        set -eu
+
+                        # git: scripts/ci/check_forbidden_files.py inspects `git ls-files`.
+                        # libgomp1: OpenMP runtime required by LightGBM (same as the runtime image).
+                        apt-get update
+                        apt-get install -y --no-install-recommends git libgomp1
+                        rm -rf /var/lib/apt/lists/*
+                        git config --global --add safe.directory "${WORKSPACE}"
+
+                        python -m pip install --no-cache-dir --upgrade pip
+                        python -m pip install --no-cache-dir -r requirements.txt -r requirements-dev.txt
+
+                        # Forbidden files, Alembic single-head check, dependency-lock consistency,
+                        # ruff, mypy and the full pytest suite (SQLite-isolated, no database needed).
+                        python -m scripts.ci.verify --full
+                    '''
+                }
+            }
+        }
+
+        stage('Build and Push Image') {
+            steps {
+                script {
+                    env.GIT_COMMIT_FULL = sh(script: 'git rev-parse HEAD', returnStdout: true).trim()
+                    env.IMAGE_TAG = "${env.BUILD_NUMBER}-${sh(script: 'git rev-parse --short=7 HEAD', returnStdout: true).trim()}-${sh(script: 'date -u +%Y%m%d%H%M%S', returnStdout: true).trim()}"
+                    env.BUILD_TIME_VALUE = sh(script: 'date -u +%Y-%m-%dT%H:%M:%SZ', returnStdout: true).trim()
+                }
+                container('kaniko') {
+                    sh '''
+                        set -eu
+
+                        /kaniko/executor \
+                          --context "${WORKSPACE}" \
+                          --dockerfile "${WORKSPACE}/Dockerfile" \
+                          --destination "${IMAGE_REPOSITORY}:${IMAGE_TAG}" \
+                          --build-arg "SERVICE_COMMIT=${GIT_COMMIT_FULL}" \
+                          --build-arg "SERVICE_BUILD_TIME=${BUILD_TIME_VALUE}" \
+                          --cache=true \
+                          --compressed-caching=false \
+                          --snapshot-mode=redo \
+                          --use-new-run
+                    '''
+                }
+            }
+        }
+
+        stage('Run Migrations') {
+            steps {
+                container('tools') {
+                    sh '''
+                        set -eu
+
+                        apk add --no-cache kubectl
+                        MIGRATION_JOB="${SERVICE_NAME}-migrate-${BUILD_NUMBER}"
+
+                        kubectl delete job "${MIGRATION_JOB}" \
+                          --namespace "${K8S_NAMESPACE}" \
+                          --ignore-not-found
+
+                        # Idempotent Alembic upgrade with the freshly built image, against the same
+                        # DATABASE_URL secret the app uses. APP_ENV stays unset (local mode) so the
+                        # migration job needs no INTERNAL_API_KEY.
+                        cat <<EOF | kubectl apply --namespace "${K8S_NAMESPACE}" -f -
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: ${MIGRATION_JOB}
+  labels:
+    app.kubernetes.io/name: ${SERVICE_NAME}
+    app.kubernetes.io/component: migration
+spec:
+  backoffLimit: 1
+  ttlSecondsAfterFinished: 600
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: ${SERVICE_NAME}
+        app.kubernetes.io/component: migration
+    spec:
+      restartPolicy: Never
+      containers:
+        - name: migrate
+          image: ${IMAGE_REPOSITORY}:${IMAGE_TAG}
+          imagePullPolicy: IfNotPresent
+          command:
+            - python
+            - -m
+            - alembic
+            - upgrade
+            - head
+          env:
+            - name: DATABASE_URL
+              valueFrom:
+                secretKeyRef:
+                  name: ${DB_SECRET_NAME}
+                  key: DATABASE_URL
+          resources:
+            requests:
+              cpu: 100m
+              memory: 256Mi
+            limits:
+              cpu: 500m
+              memory: 512Mi
+EOF
+
+                        kubectl wait \
+                          --for=condition=complete \
+                          --timeout=5m \
+                          job/"${MIGRATION_JOB}" \
+                          --namespace "${K8S_NAMESPACE}" || {
+                            kubectl logs job/"${MIGRATION_JOB}" --namespace "${K8S_NAMESPACE}" || true
+                            kubectl describe job/"${MIGRATION_JOB}" --namespace "${K8S_NAMESPACE}" || true
+                            exit 1
+                          }
+                    '''
+                }
+            }
+        }
+
+        stage('Deploy dev') {
+            steps {
+                container('tools') {
+                    sh '''
+                        set -eu
+
+                        apk add --no-cache helm kubectl
+
+                        helm upgrade --install "${SERVICE_NAME}" "${APP_HELM_CHART}" \
+                          --namespace "${K8S_NAMESPACE}" \
+                          --values "${APP_VALUES_FILE}" \
+                          --set image.repository="${IMAGE_REPOSITORY}" \
+                          --set image.tag="${IMAGE_TAG}" \
+                          --set-string env.SERVICE_COMMIT="${GIT_COMMIT_FULL}" \
+                          --set-string env.SERVICE_BUILD_TIME="${BUILD_TIME_VALUE}" \
+                          --wait \
+                          --timeout 8m || {
+                            kubectl get pods --namespace "${K8S_NAMESPACE}" \
+                              -l app.kubernetes.io/name="${SERVICE_NAME}" -o wide || true
+                            kubectl describe deployment/"${SERVICE_NAME}" \
+                              --namespace "${K8S_NAMESPACE}" || true
+                            kubectl get events --namespace "${K8S_NAMESPACE}" \
+                              --sort-by=.lastTimestamp | tail -80 || true
+                            exit 1
+                          }
+
+                        kubectl rollout status deployment/"${SERVICE_NAME}" \
+                          --namespace "${K8S_NAMESPACE}" \
+                          --timeout 5m
+                    '''
+                }
+            }
+        }
+    }
+}

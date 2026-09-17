@@ -1,0 +1,11 @@
+{
+  "datasetVersion": "real-v0-empty",
+  "taxonomyVersion": null,
+  "createdAt": "2026-09-16T07:12:18.423960+00:00",
+  "recordCount": 0,
+  "sourceComposition": {},
+  "languageComposition": {},
+  "reviewStatusComposition": {},
+  "duplicateFingerprintCount": 0,
+  "description": "Real, human-reviewed Content Understanding dataset. Currently EMPTY -- no real labeled production data has been collected yet. See ../README.md."
+}

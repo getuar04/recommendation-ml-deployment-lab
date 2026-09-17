@@ -1,0 +1,60 @@
+# Application Deployment ONLY. The pre-deploy Alembic migration Job is intentionally NOT
+# templated here -- Jenkins.lab creates/applies it directly, BEFORE `helm upgrade`, exactly
+# like the real production/dev pipeline (see README "Migration Job ownership"). This chart
+# must never duplicate that Job.
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "recommendation-ml-service-lab.fullname" . }}
+  labels:
+    {{- include "recommendation-ml-service-lab.labels" . | nindent 4 }}
+spec:
+  # replicaCount is deliberately 1: trained model artifacts live on the container's own
+  # filesystem and are not shared between pods (same constraint as production/dev).
+  replicas: {{ .Values.replicaCount }}
+  selector:
+    matchLabels:
+      {{- include "recommendation-ml-service-lab.selectorLabels" . | nindent 6 }}
+  # No custom .spec.strategy: the Kubernetes default (RollingUpdate, 25% max unavailable /
+  # 25% max surge) applies, matching production/dev, which never overrides it either.
+  template:
+    metadata:
+      labels:
+        {{- include "recommendation-ml-service-lab.selectorLabels" . | nindent 8 }}
+      {{- with .Values.podAnnotations }}
+      annotations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+    spec:
+      containers:
+        - name: {{ include "recommendation-ml-service-lab.name" . }}
+          image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
+          # Never a registry pull -- this image only ever exists in the local Docker
+          # Desktop daemon that this cluster shares.
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          ports:
+            - name: http
+              containerPort: {{ .Values.service.targetPort | default .Values.service.port }}
+              protocol: TCP
+          env:
+            {{- range $key, $value := .Values.env }}
+            {{- if kindIs "map" $value }}
+            - name: {{ $key }}
+              {{- toYaml $value | nindent 14 }}
+            {{- else }}
+            - name: {{ $key }}
+              value: {{ $value | quote }}
+            {{- end }}
+            {{- end }}
+          {{- with .Values.readinessProbe }}
+          readinessProbe:
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
+          {{- with .Values.livenessProbe }}
+          livenessProbe:
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
+          {{- with .Values.resources }}
+          resources:
+            {{- toYaml . | nindent 12 }}
+          {{- end }}

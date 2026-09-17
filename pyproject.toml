@@ -1,0 +1,68 @@
+# Phase A: explicit lint/type-check configuration. Neither existed before this change.
+# It intentionally does not declare a `[project]`/`[build-system]` table: this repository
+# is a deployed service, not a distributed package.
+
+[tool.ruff.lint]
+# Deliberately does NOT set `select`/`extend-select`/`target-version` here: this project has
+# always run `ruff check app tests scripts` against ruff's own built-in default rule set and
+# auto-detected target version (there was no config file at all before this change).
+# Verified both would change today's actual behavior, not just document it: an explicit
+# `select` of the same category prefixes already observed firing took the finding count from
+# ~150 to ~1861 (whole categories pull in far more individual rules than were actually
+# active), and pinning `target-version = "py312"` (accurate for this project's Dockerfile,
+# but previously unset) newly enables UP017 across ~20 pre-existing `datetime.timezone.utc`
+# call sites unrelated to this change. Leaving both unset preserves today's behavior exactly.
+# What *is* pinned below is narrowly scoped to a real, documented need (the FastAPI
+# dependency-injection idiom), not a ruleset or target-version change.
+
+[tool.ruff.lint.flake8-bugbear]
+# FastAPI's documented dependency-injection idiom is `param: T = Depends(...)` /
+# `= Query(...)` as a function default. B008 (function-call-in-default-argument) exists to
+# catch a different, real bug -- a genuinely mutable default shared across calls -- which
+# does not apply here: FastAPI intercepts these calls at routing time, it never evaluates
+# them as an ordinary shared default. Rather than rewriting every route handler around the
+# idiom, or blanket-disabling B008 project-wide, this uses bugbear's own documented
+# mechanism for exactly this situation: declaring the two callables immutable so B008 only
+# stops firing for them, not for other function-call defaults anywhere else in the code.
+extend-immutable-calls = ["fastapi.Depends", "fastapi.Query"]
+
+[tool.mypy]
+python_version = "3.12"
+
+# pandas/sklearn/joblib ship no inline type information, and installing third-party stub
+# packages for them (pandas-stubs, etc.) is a separate, deliberate dependency decision out
+# of scope for this change. Without this override, every import of them anywhere in the
+# codebase reports an `[import-untyped]` "Library stubs not installed" / "missing library
+# stubs or py.typed marker" error that carries no actionable information. This does not
+# silence errors *within* code that uses these libraries -- a genuine argument-type
+# mismatch on a numpy/sklearn call still reports normally -- it only stops flagging the
+# import itself as unresolvable.
+[[tool.mypy.overrides]]
+module = ["pandas", "pandas.*", "sklearn", "sklearn.*", "joblib", "joblib.*"]
+ignore_missing_imports = true
+
+# catboost ships no py.typed marker/stubs (xgboost and lightgbm both do, so they need no
+# override here) -- same rationale as the pandas/sklearn/joblib override above: this only
+# stops flagging the import itself as unresolvable, it does not silence a genuine
+# argument-type mismatch on a catboost call.
+[[tool.mypy.overrides]]
+module = ["catboost", "catboost.*"]
+ignore_missing_imports = true
+
+# torch is an optional dependency of the guarded Two-Tower retrieval path only
+# (TWO_TOWER_RETRIEVAL_ENABLED, default false; every import of app.ml.two_tower.* elsewhere
+# is lazy/function-local specifically so torch is never required for the default, served
+# path -- see app.services.two_tower_shadow_service's module docstring). It ships no py.typed
+# marker/stubs. Same rationale as the overrides above: this only stops flagging the import
+# itself as unresolvable, it does not silence a genuine argument-type mismatch on a torch
+# call, and it does not activate or change any Two-Tower runtime behavior.
+[[tool.mypy.overrides]]
+module = ["torch", "torch.*"]
+ignore_missing_imports = true
+
+# psutil is used only by scripts/run_production_readiness_acceptance.py (soak-test memory
+# sampling), never by app/ runtime code. Ships no py.typed marker/stubs -- same rationale as
+# the overrides above.
+[[tool.mypy.overrides]]
+module = ["psutil"]
+ignore_missing_imports = true

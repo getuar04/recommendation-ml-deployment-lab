@@ -1,0 +1,623 @@
+{
+  "generatedFrom": {
+    "sport": "comparative-sport-v1",
+    "entertainment": "comparative-entertainment-v1",
+    "music": "comparative-music-v1",
+    "balanced": "comparative-balanced-v1"
+  },
+  "sameAlgorithmVerification": {
+    "algorithmIdenticalAcrossExperiments": true,
+    "algorithms": {
+      "sport": "LogisticRegression",
+      "entertainment": "LogisticRegression",
+      "music": "LogisticRegression",
+      "balanced": "LogisticRegression"
+    },
+    "hyperparametersIdenticalAcrossExperiments": true,
+    "hyperparameters": {
+      "sport": {
+        "C": 1.0,
+        "class_weight": "balanced",
+        "dual": false,
+        "fit_intercept": true,
+        "intercept_scaling": 1,
+        "l1_ratio": 0.0,
+        "max_iter": 1000,
+        "n_jobs": null,
+        "penalty": "deprecated",
+        "random_state": 42,
+        "solver": "lbfgs",
+        "tol": 0.0001,
+        "verbose": 0,
+        "warm_start": false
+      },
+      "entertainment": {
+        "C": 1.0,
+        "class_weight": "balanced",
+        "dual": false,
+        "fit_intercept": true,
+        "intercept_scaling": 1,
+        "l1_ratio": 0.0,
+        "max_iter": 1000,
+        "n_jobs": null,
+        "penalty": "deprecated",
+        "random_state": 42,
+        "solver": "lbfgs",
+        "tol": 0.0001,
+        "verbose": 0,
+        "warm_start": false
+      },
+      "music": {
+        "C": 1.0,
+        "class_weight": "balanced",
+        "dual": false,
+        "fit_intercept": true,
+        "intercept_scaling": 1,
+        "l1_ratio": 0.0,
+        "max_iter": 1000,
+        "n_jobs": null,
+        "penalty": "deprecated",
+        "random_state": 42,
+        "solver": "lbfgs",
+        "tol": 0.0001,
+        "verbose": 0,
+        "warm_start": false
+      },
+      "balanced": {
+        "C": 1.0,
+        "class_weight": "balanced",
+        "dual": false,
+        "fit_intercept": true,
+        "intercept_scaling": 1,
+        "l1_ratio": 0.0,
+        "max_iter": 1000,
+        "n_jobs": null,
+        "penalty": "deprecated",
+        "random_state": 42,
+        "solver": "lbfgs",
+        "tol": 0.0001,
+        "verbose": 0,
+        "warm_start": false
+      }
+    },
+    "datasetGenerationSeedIdenticalAcrossExperiments": true,
+    "datasetGenerationSeeds": {
+      "sport": 20260805,
+      "entertainment": 20260805,
+      "music": 20260805,
+      "balanced": 20260805
+    },
+    "modelRandomStateIdenticalAcrossExperiments": true,
+    "modelRandomStates": {
+      "sport": 42,
+      "entertainment": 42,
+      "music": 42,
+      "balanced": 42
+    },
+    "fixedScenarioIdenticalAcrossExperiments": true,
+    "fixedScenarios": {
+      "sport": {
+        "userId": "comparative-fixed-test-user",
+        "limit": 10,
+        "candidateCategories": [
+          "COMEDY",
+          "FASHION",
+          "FITNESS",
+          "FOOD",
+          "GAMING",
+          "MUSIC",
+          "NEWS",
+          "SPORT",
+          "TECH",
+          "TRAVEL"
+        ],
+        "candidateCount": 13
+      },
+      "entertainment": {
+        "userId": "comparative-fixed-test-user",
+        "limit": 10,
+        "candidateCategories": [
+          "COMEDY",
+          "FASHION",
+          "FITNESS",
+          "FOOD",
+          "GAMING",
+          "MUSIC",
+          "NEWS",
+          "SPORT",
+          "TECH",
+          "TRAVEL"
+        ],
+        "candidateCount": 13
+      },
+      "music": {
+        "userId": "comparative-fixed-test-user",
+        "limit": 10,
+        "candidateCategories": [
+          "COMEDY",
+          "FASHION",
+          "FITNESS",
+          "FOOD",
+          "GAMING",
+          "MUSIC",
+          "NEWS",
+          "SPORT",
+          "TECH",
+          "TRAVEL"
+        ],
+        "candidateCount": 13
+      },
+      "balanced": {
+        "userId": "comparative-fixed-test-user",
+        "limit": 10,
+        "candidateCategories": [
+          "COMEDY",
+          "FASHION",
+          "FITNESS",
+          "FOOD",
+          "GAMING",
+          "MUSIC",
+          "NEWS",
+          "SPORT",
+          "TECH",
+          "TRAVEL"
+        ],
+        "candidateCount": 13
+      }
+    },
+    "fixedCandidateListSource": "All four experiments' /recommendations requests were built from the single shared app.experiments.fixed_scenario.FIXED_CANDIDATES constant -- identical by construction, not merely by comparison.",
+    "fixedCandidateCount": 13,
+    "fixedTestUserId": "comparative-fixed-test-user",
+    "fixedRecommendationLimit": 10
+  },
+  "comparisonTable": [
+    {
+      "experiment": "comparative-sport-v1",
+      "dataset": "sport",
+      "algorithm": "LogisticRegression",
+      "dominantCategory": "SPORT",
+      "f1Score": 0.828711,
+      "prAuc": 0.752932,
+      "rocAuc": 0.566972,
+      "topRecommendedCategories": [
+        "SPORT",
+        "COMEDY",
+        "MUSIC",
+        "NEWS",
+        "FASHION",
+        "FOOD",
+        "TECH",
+        "GAMING",
+        "FITNESS"
+      ]
+    },
+    {
+      "experiment": "comparative-entertainment-v1",
+      "dataset": "entertainment",
+      "algorithm": "LogisticRegression",
+      "dominantCategory": "COMEDY",
+      "f1Score": 0.828711,
+      "prAuc": 0.752371,
+      "rocAuc": 0.566289,
+      "topRecommendedCategories": [
+        "COMEDY",
+        "FASHION",
+        "FITNESS",
+        "TRAVEL",
+        "FOOD",
+        "TECH",
+        "GAMING",
+        "SPORT",
+        "MUSIC"
+      ]
+    },
+    {
+      "experiment": "comparative-music-v1",
+      "dataset": "music",
+      "algorithm": "LogisticRegression",
+      "dominantCategory": "MUSIC",
+      "f1Score": 0.828711,
+      "prAuc": 0.7524,
+      "rocAuc": 0.566289,
+      "topRecommendedCategories": [
+        "MUSIC",
+        "COMEDY",
+        "NEWS",
+        "FITNESS",
+        "TRAVEL",
+        "FOOD",
+        "TECH",
+        "GAMING",
+        "SPORT"
+      ]
+    },
+    {
+      "experiment": "comparative-balanced-v1",
+      "dataset": "balanced",
+      "algorithm": "LogisticRegression",
+      "dominantCategory": "NONE",
+      "f1Score": 0.6313,
+      "prAuc": 0.668243,
+      "rocAuc": 0.71527,
+      "topRecommendedCategories": [
+        "COMEDY",
+        "TECH",
+        "FOOD",
+        "MUSIC",
+        "TRAVEL",
+        "FITNESS",
+        "FASHION",
+        "NEWS",
+        "GAMING"
+      ]
+    }
+  ],
+  "metricComparison": {
+    "sport": {
+      "accuracy": 0.711538,
+      "precision": 0.709497,
+      "recall": 0.996078,
+      "f1Score": 0.828711,
+      "prAuc": 0.752932,
+      "rocAuc": 0.566972
+    },
+    "entertainment": {
+      "accuracy": 0.711538,
+      "precision": 0.709497,
+      "recall": 0.996078,
+      "f1Score": 0.828711,
+      "prAuc": 0.752371,
+      "rocAuc": 0.566289
+    },
+    "music": {
+      "accuracy": 0.711538,
+      "precision": 0.709497,
+      "recall": 0.996078,
+      "f1Score": 0.828711,
+      "prAuc": 0.7524,
+      "rocAuc": 0.566289
+    },
+    "balanced": {
+      "accuracy": 0.625337,
+      "precision": 0.558685,
+      "recall": 0.72561,
+      "f1Score": 0.6313,
+      "prAuc": 0.668243,
+      "rocAuc": 0.71527
+    }
+  },
+  "candidateScoreMatrix": {
+    "fixed-cand-comedy-1": {
+      "perExperiment": {
+        "sport": {
+          "rank": 2,
+          "score": 0.739479
+        },
+        "entertainment": {
+          "rank": 1,
+          "score": 0.808695
+        },
+        "music": {
+          "rank": 3,
+          "score": 0.721354
+        },
+        "balanced": {
+          "rank": 1,
+          "score": 0.613673
+        }
+      },
+      "scoreSpread": 0.195022
+    },
+    "fixed-cand-comedy-2": {
+      "perExperiment": {
+        "sport": {
+          "rank": 10,
+          "score": 0.68477
+        },
+        "entertainment": {
+          "rank": 2,
+          "score": 0.756486
+        },
+        "music": {
+          "rank": null,
+          "score": null
+        },
+        "balanced": {
+          "rank": null,
+          "score": null
+        }
+      },
+      "scoreSpread": 0.071716
+    },
+    "fixed-cand-fashion-1": {
+      "perExperiment": {
+        "sport": {
+          "rank": 5,
+          "score": 0.710869
+        },
+        "entertainment": {
+          "rank": 3,
+          "score": 0.709967
+        },
+        "music": {
+          "rank": null,
+          "score": null
+        },
+        "balanced": {
+          "rank": 7,
+          "score": 0.503268
+        }
+      },
+      "scoreSpread": 0.207601
+    },
+    "fixed-cand-fitness-1": {
+      "perExperiment": {
+        "sport": {
+          "rank": 9,
+          "score": 0.692017
+        },
+        "entertainment": {
+          "rank": 4,
+          "score": 0.708622
+        },
+        "music": {
+          "rank": 5,
+          "score": 0.708431
+        },
+        "balanced": {
+          "rank": 6,
+          "score": 0.507559
+        }
+      },
+      "scoreSpread": 0.201063
+    },
+    "fixed-cand-food-1": {
+      "perExperiment": {
+        "sport": {
+          "rank": 6,
+          "score": 0.707848
+        },
+        "entertainment": {
+          "rank": 6,
+          "score": 0.706826
+        },
+        "music": {
+          "rank": 7,
+          "score": 0.706623
+        },
+        "balanced": {
+          "rank": 3,
+          "score": 0.534175
+        }
+      },
+      "scoreSpread": 0.173673
+    },
+    "fixed-cand-gaming-1": {
+      "perExperiment": {
+        "sport": {
+          "rank": 8,
+          "score": 0.706143
+        },
+        "entertainment": {
+          "rank": 8,
+          "score": 0.705055
+        },
+        "music": {
+          "rank": 9,
+          "score": 0.70484
+        },
+        "balanced": {
+          "rank": 10,
+          "score": 0.490773
+        }
+      },
+      "scoreSpread": 0.21537
+    },
+    "fixed-cand-music-1": {
+      "perExperiment": {
+        "sport": {
+          "rank": null,
+          "score": null
+        },
+        "entertainment": {
+          "rank": null,
+          "score": null
+        },
+        "music": {
+          "rank": 2,
+          "score": 0.749624
+        },
+        "balanced": {
+          "rank": 4,
+          "score": 0.531488
+        }
+      },
+      "scoreSpread": 0.218136
+    },
+    "fixed-cand-music-2": {
+      "perExperiment": {
+        "sport": {
+          "rank": 3,
+          "score": 0.71159
+        },
+        "entertainment": {
+          "rank": 10,
+          "score": 0.693289
+        },
+        "music": {
+          "rank": 1,
+          "score": 0.786688
+        },
+        "balanced": {
+          "rank": 9,
+          "score": 0.492055
+        }
+      },
+      "scoreSpread": 0.294633
+    },
+    "fixed-cand-news-1": {
+      "perExperiment": {
+        "sport": {
+          "rank": 4,
+          "score": 0.710893
+        },
+        "entertainment": {
+          "rank": null,
+          "score": null
+        },
+        "music": {
+          "rank": 4,
+          "score": 0.709781
+        },
+        "balanced": {
+          "rank": 8,
+          "score": 0.49315
+        }
+      },
+      "scoreSpread": 0.217743
+    },
+    "fixed-cand-sport-1": {
+      "perExperiment": {
+        "sport": {
+          "rank": 1,
+          "score": 0.780762
+        },
+        "entertainment": {
+          "rank": 9,
+          "score": 0.70331
+        },
+        "music": {
+          "rank": 10,
+          "score": 0.703082
+        },
+        "balanced": {
+          "rank": null,
+          "score": null
+        }
+      },
+      "scoreSpread": 0.07768
+    },
+    "fixed-cand-tech-1": {
+      "perExperiment": {
+        "sport": {
+          "rank": 7,
+          "score": 0.706771
+        },
+        "entertainment": {
+          "rank": 7,
+          "score": 0.705707
+        },
+        "music": {
+          "rank": 8,
+          "score": 0.705496
+        },
+        "balanced": {
+          "rank": 2,
+          "score": 0.544302
+        }
+      },
+      "scoreSpread": 0.162469
+    },
+    "fixed-cand-travel-1": {
+      "perExperiment": {
+        "sport": {
+          "rank": null,
+          "score": null
+        },
+        "entertainment": {
+          "rank": 5,
+          "score": 0.707996
+        },
+        "music": {
+          "rank": 6,
+          "score": 0.707801
+        },
+        "balanced": {
+          "rank": 5,
+          "score": 0.508418
+        }
+      },
+      "scoreSpread": 0.199578
+    }
+  },
+  "top10CategoryDistribution": {
+    "sport": {
+      "COMEDY": 0.2,
+      "SPORT": 0.1,
+      "MUSIC": 0.1,
+      "NEWS": 0.1,
+      "FASHION": 0.1,
+      "FOOD": 0.1,
+      "TECH": 0.1,
+      "GAMING": 0.1,
+      "FITNESS": 0.1
+    },
+    "entertainment": {
+      "COMEDY": 0.2,
+      "FASHION": 0.1,
+      "FITNESS": 0.1,
+      "TRAVEL": 0.1,
+      "FOOD": 0.1,
+      "TECH": 0.1,
+      "GAMING": 0.1,
+      "SPORT": 0.1,
+      "MUSIC": 0.1
+    },
+    "music": {
+      "MUSIC": 0.2,
+      "COMEDY": 0.1,
+      "NEWS": 0.1,
+      "FITNESS": 0.1,
+      "TRAVEL": 0.1,
+      "FOOD": 0.1,
+      "TECH": 0.1,
+      "GAMING": 0.1,
+      "SPORT": 0.1
+    },
+    "balanced": {
+      "MUSIC": 0.2,
+      "COMEDY": 0.1,
+      "TECH": 0.1,
+      "FOOD": 0.1,
+      "TRAVEL": 0.1,
+      "FITNESS": 0.1,
+      "FASHION": 0.1,
+      "NEWS": 0.1,
+      "GAMING": 0.1
+    }
+  },
+  "recommendationLearningFindings": [
+    {
+      "experiment": "comparative-sport-v1",
+      "dominantCategory": "SPORT",
+      "candidateId": "fixed-cand-sport-1",
+      "observation": "Candidate 'fixed-cand-sport-1' reached the Top 10 in sport (rank 1, score 0.780762) but not in balanced -- consistent with the hypothesis.",
+      "supportsHypothesis": true
+    },
+    {
+      "experiment": "comparative-entertainment-v1",
+      "dominantCategory": "COMEDY",
+      "candidateId": "fixed-cand-comedy-1",
+      "observation": "Candidate 'fixed-cand-comedy-1' (category COMEDY) scored 0.808695 (rank 1) in entertainment vs 0.613673 (rank 1) in balanced -- a delta of +0.195022, consistent with the hypothesis that COMEDY-dominant training increases this candidate's score.",
+      "supportsHypothesis": true
+    },
+    {
+      "experiment": "comparative-music-v1",
+      "dominantCategory": "MUSIC",
+      "candidateId": "fixed-cand-music-1",
+      "observation": "Candidate 'fixed-cand-music-1' (category MUSIC) scored 0.749624 (rank 2) in music vs 0.531488 (rank 4) in balanced -- a delta of +0.218136, consistent with the hypothesis that MUSIC-dominant training increases this candidate's score.",
+      "supportsHypothesis": true
+    }
+  ],
+  "businessInterpretation": "A recommendation service that genuinely learns from behavioral data should surface more of a user's likely-preferred category when that category dominates the training signal, without any change to the algorithm, code, or serving logic -- this is what operators should expect when retraining against a shifted content-consumption pattern (e.g. a seasonal spike in one content category). See recommendationLearningFindings for whether this run's data actually shows that; a synthetic-data PoC result here is evidence about pipeline behavior, not a production guarantee.",
+  "syntheticDataLimitations": "All four datasets are entirely synthetic (app.experiments.comparative_dataset_generation), generated from simple weighted-category heuristics, not real user behavior -- category preference is injected directly into the generation process rather than emerging from organic engagement patterns, which can make the learned signal cleaner (or noisier) than a real dataset of the same size would produce. The fixed test user is a cold-start user with zero interaction history in every experiment (a deliberate choice so 'same user context' is trivially true across four separate databases -- see app.experiments.fixed_scenario), so these results say nothing about how a model trained on skewed data would treat a user with a real, independent history of their own. Absolute metric values, scores, and rankings describe this specific synthetic run only and must not be presented as production evidence.",
+  "conclusion": {
+    "verdict": "YES",
+    "statement": "The same locked algorithm and configuration produced meaningfully different recommendations when trained on different datasets: all 3 dominant-category experiment(s) with a comparable fixed candidate scored/ranked that candidate higher than the balanced-training run did.",
+    "topRecommendedCategoriesDifferAcrossExperiments": true,
+    "supportingFindings": 3,
+    "contradictingFindings": 0,
+    "inconclusiveFindings": 0,
+    "diagnosticPossibleCauses": []
+  }
+}

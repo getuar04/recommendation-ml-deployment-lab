@@ -1,0 +1,91 @@
+# Chart-local defaults. The lab deploy always overrides these via
+# `--values deploy/values-lab.yaml` (see Jenkins.lab "Helm Deploy" stage); these defaults
+# only make `helm lint`/`helm template` produce a sane render on their own, and exist purely
+# for local, standalone chart development -- they are never a deployment target themselves.
+
+nameOverride: recommendation-ml-service-lab
+fullnameOverride: recommendation-ml-service-lab
+
+# Single replica on purpose: trained model artifacts are written to the container's own
+# filesystem (MODEL_DIR) and are not shared between pods -- same constraint as
+# production/dev (see README "Kubernetes deployment").
+replicaCount: 1
+
+image:
+  # Local image only -- built with `docker build` on the Docker Desktop daemon. No registry.
+  repository: recommendation-ml-service-lab
+  tag: dev
+  # Never attempt a registry pull: the image only ever exists in the local Docker Desktop
+  # daemon that Kubernetes shares.
+  pullPolicy: Never
+
+service:
+  type: ClusterIP
+  port: 3500
+  targetPort: 3500
+
+# No pod annotations by default in the lab (the production/dev karpenter
+# "do-not-disrupt" annotation has no meaning on Docker Desktop -- there is no Karpenter).
+podAnnotations: {}
+
+# Env vars: a plain scalar renders as `value: "..."`; a map (e.g. `valueFrom: {secretKeyRef:
+# {...}}`) is passed through as-is. See templates/deployment.yaml.
+env:
+  PORT: "3500"
+  # Any value other than local/test makes DATABASE_URL mandatory at startup
+  # (app/core/config.py) -- matches production/dev's "refuses to start without a real
+  # database" mechanic instead of silently falling back to a local default.
+  APP_ENV: lab
+  SERVICE_NAME: recommendation-ml-service-lab
+  SERVICE_VERSION: "1.0.0"
+  SERVICE_COMMIT: unknown
+  SERVICE_BUILD_TIME: unknown
+
+  # PostgreSQL: must point at the lab datastore Service, e.g.
+  # rms-lab-postgres.rms-lab.svc.cluster.local:5432 -- injected from a Secret that must
+  # already exist in the namespace before this chart is deployed (never a hardcoded URL).
+  DATABASE_URL:
+    valueFrom:
+      secretKeyRef:
+        name: rms-lab-db
+        key: DATABASE_URL
+  # Kept only because app/services/service_clients.py still sends it on outbound calls;
+  # lab-only Secret reference, never a hardcoded/generated key. If the Secret or its
+  # INTERNAL_API_KEY key is missing, the pod will fail with CreateContainerConfigError --
+  # that failure mode is intentionally preserved (see README "INTERNAL_API_KEY" experiment).
+  INTERNAL_API_KEY:
+    valueFrom:
+      secretKeyRef:
+        name: rms-lab-app
+        key: INTERNAL_API_KEY
+
+  MODEL_DIR: /app/models
+  EXPERIMENT_DIR: /app/experiments
+
+resources:
+  requests:
+    cpu: 250m
+    memory: 512Mi
+  limits:
+    cpu: "2"
+    memory: 2Gi
+
+# GET /health answers 503 only when PostgreSQL is unreachable -- DB-aware on purpose (needed
+# for the later PostgreSQL-outage experiments). Timings copied unchanged from production/dev.
+readinessProbe:
+  httpGet:
+    path: /api/v1/recommendation-ml-service/health
+    port: 3500
+  initialDelaySeconds: 10
+  periodSeconds: 10
+  timeoutSeconds: 3
+  failureThreshold: 6
+
+livenessProbe:
+  httpGet:
+    path: /api/v1/recommendation-ml-service/health
+    port: 3500
+  initialDelaySeconds: 30
+  periodSeconds: 30
+  timeoutSeconds: 5
+  failureThreshold: 6

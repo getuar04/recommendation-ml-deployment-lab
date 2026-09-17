@@ -1,0 +1,52 @@
+{
+  "runId": "fe38b319815d4817",
+  "experimentId": "large-imbalanced-synthetic-v1",
+  "datasetVersion": "large-imbalanced-synthetic-v1",
+  "modelType": "VIDEO",
+  "synthetic": true,
+  "startedAt": "2026-07-30T11:28:49.125642+00:00",
+  "status": "SUCCEEDED",
+  "completedAt": "2026-07-30T11:30:37.548248+00:00",
+  "modelVersion": "recommendation-poc-20260730113035",
+  "selectedModel": "RandomForestClassifier",
+  "decisionThreshold": 0.32680367405658395,
+  "trainingDurationSeconds": 49.183,
+  "datasetGenerationSeconds": 54.306,
+  "totalExperimentSeconds": 108.423,
+  "metrics": {
+    "accuracy": 0.625129,
+    "precision": 0.443252,
+    "recall": 0.616205,
+    "f1Score": 0.515611,
+    "prAuc": 0.53393,
+    "rocAuc": 0.672258
+  },
+  "rankingMetrics": {
+    "precisionAt5": 0.310332,
+    "recallAt10": 1.0,
+    "ndcgAt10": 0.890013
+  },
+  "dataset": {
+    "totalInteractions": 29994,
+    "labelledSamples": 14169,
+    "neutralRowsExcluded": 15825,
+    "positiveSamples": 4513,
+    "negativeSamples": 9656,
+    "positiveRatio": 0.3185,
+    "negativeRatio": 0.6815,
+    "uniqueUsers": 400,
+    "uniqueContents": 800,
+    "uniqueCreators": 60,
+    "earliestTimestamp": "2026-05-01T11:59:31.224992",
+    "latestTimestamp": "2026-07-30T11:26:57.224992"
+  },
+  "artifactSizeBytes": 28437507,
+  "datasetSource": {
+    "type": "database",
+    "synthetic": true,
+    "syntheticRowCount": 29994,
+    "totalRowCount": 29994,
+    "note": "Rows with event_id prefix 'syn-' come from scripts/generate_synthetic_data.py; a nonzero syntheticRowCount means at least part of this training run is not backed by real user behavior and metrics must not be presented as production evidence."
+  },
+  "warnings": []
+}

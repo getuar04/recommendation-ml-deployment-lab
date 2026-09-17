@@ -1,0 +1,242 @@
+// LOCAL LAB pipeline: builds, tests and deploys recommendation-ml-service-lab to the
+// LOCAL Docker Desktop Kubernetes target only (context `docker-desktop`, namespace
+// `rms-lab`) using deploy/values-lab.yaml. This is the lab equivalent of Jenkinsfile /
+// Jenkins.g2r-eks and stays structurally identical to them (same stage order: Checkout ->
+// Validate Lab Environment -> Test -> Build -> Run Migrations -> Helm Deploy -> Rollout
+// Status; migration-before-deploy, `helm upgrade --wait` and `kubectl rollout status` are
+// all preserved); only target-bound values and the build/deploy mechanism differ:
+//   - a plain `docker build` replaces Kaniko (no build-pod image pull needed locally)
+//   - the local Docker Desktop image cache replaces ECR (no registry, ever)
+//   - Docker Desktop Kubernetes replaces EKS
+//   - a local Helm chart replaces the company's inturium-helm-charts chart repository
+//     (no SSH clone -- the chart is expected to live inside this workspace once it exists;
+//     see README for the "no chart yet" status of this lab)
+//
+// NOT EXECUTED as part of Phase 2 -- this file is configuration preparation only, and every
+// stage below is designed to FAIL CLOSED (via scripts/lab/guard_kube_context.sh and the
+// checks in "Validate Lab Environment") if it is ever run outside the local lab.
+pipeline {
+    options {
+        skipDefaultCheckout(true)
+    }
+
+    // Runs on the local Jenkins agent that has Docker Desktop's daemon and kubectl/helm CLIs
+    // on PATH -- no remote Kubernetes build-agent pod, no cloud credentials of any kind.
+    agent any
+
+    environment {
+        LAB_MODE = 'true'
+        EXPECTED_KUBE_CONTEXT = 'docker-desktop'
+        SERVICE_NAME = 'recommendation-ml-service-lab'
+        K8S_NAMESPACE = 'rms-lab'
+        IMAGE_REPOSITORY = 'recommendation-ml-service-lab'
+        APP_HELM_CHART = './charts/recommendation-ml-service-lab'
+        APP_VALUES_FILE = 'deploy/values-lab.yaml'
+        POSTGRES_CHART = './charts/postgresql-lab'
+        POSTGRES_VALUES_FILE = 'deploy/datastores/postgresql-values-lab.yaml'
+        DB_SECRET_NAME = 'rms-lab-db'
+        APP_SECRET_NAME = 'rms-lab-app'
+        PIP_DISABLE_PIP_VERSION_CHECK = '1'
+    }
+
+    stages {
+        stage('Checkout') {
+            steps {
+                // Local workspace checkout only -- no SSH keyscan, no external Git host, no
+                // Helm chart repository to clone (see APP_HELM_CHART/POSTGRES_CHART above).
+                checkout scm
+            }
+        }
+
+        stage('Validate Lab Environment') {
+            steps {
+                sh '''
+                    set -eu
+
+                    # Fail closed before anything else touches kubectl/helm.
+                    bash scripts/lab/guard_kube_context.sh
+
+                    if [ "${K8S_NAMESPACE}" != "rms-lab" ]; then
+                        echo "REFUSING: K8S_NAMESPACE must be exactly rms-lab, got ${K8S_NAMESPACE}." >&2
+                        exit 1
+                    fi
+
+                    # No AWS/ECR/EKS production identifiers may appear in the lab values files.
+                    if grep -inE "amazonaws|ecr\\.|eks|g2r-prod|g2r-dev|[0-9]{12}" \
+                        "${APP_VALUES_FILE}" "${POSTGRES_VALUES_FILE}"; then
+                        echo "REFUSING: a production AWS/ECR/EKS identifier appears in the lab values files." >&2
+                        exit 1
+                    fi
+
+                    # No company hostname/domain may appear in the lab values files.
+                    if grep -inE "g2r-inturium|grrgrrlive|inturium-dev\\.com" \
+                        "${APP_VALUES_FILE}" "${POSTGRES_VALUES_FILE}"; then
+                        echo "REFUSING: a company hostname appears in the lab values files." >&2
+                        exit 1
+                    fi
+
+                    # Image target must be local (no registry prefix).
+                    if grep -qE "^[[:space:]]*repository:[[:space:]]*${IMAGE_REPOSITORY}[[:space:]]*$" "${APP_VALUES_FILE}"; then
+                        :
+                    else
+                        echo "REFUSING: ${APP_VALUES_FILE} does not reference the local image repository ${IMAGE_REPOSITORY}." >&2
+                        exit 1
+                    fi
+
+                    for required_file in Dockerfile .dockerignore alembic.ini requirements.txt "${APP_VALUES_FILE}" "${POSTGRES_VALUES_FILE}"; do
+                        test -f "${required_file}" || {
+                            echo "Required file ${required_file} is missing." >&2
+                            exit 1
+                        }
+                    done
+
+                    echo "OK: lab environment validated (namespace=${K8S_NAMESPACE}, image=${IMAGE_REPOSITORY})."
+                '''
+            }
+        }
+
+        stage('Test') {
+            steps {
+                sh '''
+                    set -eu
+                    python -m pip install --no-cache-dir --upgrade pip
+                    python -m pip install --no-cache-dir -r requirements.txt -r requirements-dev.txt
+
+                    # Forbidden files, Alembic single-head check, dependency-lock consistency,
+                    # ruff, mypy and the full pytest suite (SQLite-isolated, no database needed)
+                    # -- identical to the production/dev Test stage.
+                    python -m scripts.ci.verify --full
+                '''
+            }
+        }
+
+        stage('Build') {
+            steps {
+                script {
+                    env.GIT_COMMIT_FULL = sh(script: 'git rev-parse HEAD', returnStdout: true).trim()
+                    env.IMAGE_TAG = 'dev'
+                    env.BUILD_TIME_VALUE = sh(script: 'date -u +%Y-%m-%dT%H:%M:%SZ', returnStdout: true).trim()
+                }
+                sh '''
+                    set -eu
+
+                    # Plain local docker build -- replaces Kaniko/ECR push. The image only ever
+                    # exists in the local Docker Desktop daemon.
+                    docker build \
+                        --build-arg SERVICE_COMMIT="${GIT_COMMIT_FULL}" \
+                        --build-arg SERVICE_BUILD_TIME="${BUILD_TIME_VALUE}" \
+                        -t "${IMAGE_REPOSITORY}:${IMAGE_TAG}" .
+                '''
+            }
+        }
+
+        stage('Run Migrations') {
+            steps {
+                sh '''
+                    set -eu
+                    bash scripts/lab/guard_kube_context.sh
+
+                    MIGRATION_JOB="${SERVICE_NAME}-migrate-${BUILD_NUMBER}"
+
+                    kubectl delete job "${MIGRATION_JOB}" \
+                        --namespace "${K8S_NAMESPACE}" \
+                        --ignore-not-found
+
+                    # Idempotent Alembic upgrade with the freshly built local image, against the
+                    # same DATABASE_URL secret the app uses -- identical mechanic to
+                    # production/dev's migration-before-deploy ordering.
+                    cat <<EOF | kubectl apply --namespace "${K8S_NAMESPACE}" -f -
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: ${MIGRATION_JOB}
+  labels:
+    app.kubernetes.io/name: ${SERVICE_NAME}
+    app.kubernetes.io/component: migration
+spec:
+  backoffLimit: 1
+  ttlSecondsAfterFinished: 600
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: ${SERVICE_NAME}
+        app.kubernetes.io/component: migration
+    spec:
+      restartPolicy: Never
+      containers:
+        - name: migrate
+          image: ${IMAGE_REPOSITORY}:${IMAGE_TAG}
+          imagePullPolicy: Never
+          command:
+            - python
+            - -m
+            - alembic
+            - upgrade
+            - head
+          env:
+            - name: DATABASE_URL
+              valueFrom:
+                secretKeyRef:
+                  name: ${DB_SECRET_NAME}
+                  key: DATABASE_URL
+          resources:
+            requests:
+              cpu: 100m
+              memory: 256Mi
+            limits:
+              cpu: 500m
+              memory: 512Mi
+EOF
+
+                    kubectl wait \
+                        --for=condition=complete \
+                        --timeout=5m \
+                        job/"${MIGRATION_JOB}" \
+                        --namespace "${K8S_NAMESPACE}" || {
+                            kubectl logs job/"${MIGRATION_JOB}" --namespace "${K8S_NAMESPACE}" || true
+                            kubectl describe job/"${MIGRATION_JOB}" --namespace "${K8S_NAMESPACE}" || true
+                            exit 1
+                        }
+                '''
+            }
+        }
+
+        stage('Helm Deploy') {
+            steps {
+                sh '''
+                    set -eu
+                    bash scripts/lab/guard_kube_context.sh
+
+                    helm upgrade --install "${SERVICE_NAME}" "${APP_HELM_CHART}" \
+                        --namespace "${K8S_NAMESPACE}" \
+                        --values "${APP_VALUES_FILE}" \
+                        --set image.repository="${IMAGE_REPOSITORY}" \
+                        --set image.tag="${IMAGE_TAG}" \
+                        --set-string env.SERVICE_COMMIT="${GIT_COMMIT_FULL}" \
+                        --set-string env.SERVICE_BUILD_TIME="${BUILD_TIME_VALUE}" \
+                        --wait \
+                        --timeout 8m || {
+                            kubectl get pods --namespace "${K8S_NAMESPACE}" \
+                                -l app.kubernetes.io/name="${SERVICE_NAME}" -o wide || true
+                            kubectl describe deployment/"${SERVICE_NAME}" \
+                                --namespace "${K8S_NAMESPACE}" || true
+                            kubectl get events --namespace "${K8S_NAMESPACE}" \
+                                --sort-by=.lastTimestamp | tail -80 || true
+                            exit 1
+                        }
+                '''
+            }
+        }
+
+        stage('Rollout Status') {
+            steps {
+                sh '''
+                    set -eu
+                    kubectl rollout status deployment/"${SERVICE_NAME}" \
+                        --namespace "${K8S_NAMESPACE}" \
+                        --timeout 5m
+                '''
+            }
+        }
+    }
+}

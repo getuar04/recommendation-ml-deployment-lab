@@ -1,0 +1,68 @@
+{
+  "modelVersion": "recommendation-poc-20260721225854",
+  "selectedModel": "RandomForestClassifier",
+  "selectionCriterion": "highest validation F1-score",
+  "trainingSamples": 4218,
+  "validationSamples": 904,
+  "testSamples": 904,
+  "metrics": {
+    "accuracy": 0.69469,
+    "precision": 0.720214,
+    "recall": 0.889256,
+    "f1Score": 0.795858,
+    "rocAuc": 0.77925,
+    "precisionAt5": 0.664172,
+    "precisionAt10": 0.664172,
+    "recallAt10": 1.0,
+    "ndcgAt10": 0.944435,
+    "evaluatedCandidateGroups": 167.0
+  },
+  "modelComparison": {
+    "LogisticRegression": {
+      "accuracy": 0.689159,
+      "precision": 0.854617,
+      "recall": 0.67757,
+      "f1Score": 0.755864,
+      "rocAuc": 0.747039,
+      "precisionAt5": 0.714912,
+      "precisionAt10": 0.714912,
+      "recallAt10": 1.0,
+      "ndcgAt10": 0.94037,
+      "evaluatedCandidateGroups": 152.0
+    },
+    "RandomForestClassifier": {
+      "accuracy": 0.724558,
+      "precision": 0.780314,
+      "recall": 0.852025,
+      "f1Score": 0.814594,
+      "rocAuc": 0.753716,
+      "precisionAt5": 0.714912,
+      "precisionAt10": 0.714912,
+      "recallAt10": 1.0,
+      "ndcgAt10": 0.952276,
+      "evaluatedCandidateGroups": 152.0
+    }
+  },
+  "featureDefinitions": {
+    "category": "Candidate content category, one-hot encoded.",
+    "category_affinity": "Sigmoid-normalized weighted behavior score using only prior events.",
+    "average_category_watch_percentage": "Mean watch percentage for all prior category watches.",
+    "recent_category_watch_percentage": "Mean category watch percentage in the previous 30 days.",
+    "category_completion_rate": "Completed category watches divided by prior category watches.",
+    "recent_category_completion_rate": "Completion rate for category watches in the previous 30 days.",
+    "category_positive_count": "Prior labeled positive interactions in the category.",
+    "category_negative_count": "Prior negative or not-interested interactions in the category.",
+    "creator_interaction_count": "Prior interactions between the user and candidate creator.",
+    "creator_completion_rate": "Prior completion rate for the candidate creator.",
+    "creator_followed": "Whether the user followed the candidate creator before scoring.",
+    "content_popularity_score": "Candidate catalog popularity in [0,1], identical online and offline.",
+    "content_age_hours": "Hours from catalog creation to scoring timestamp.",
+    "already_seen": "Whether the user interacted with this content before scoring.",
+    "hour_of_day": "Hour of the scoring timestamp.",
+    "days_since_last_category_interaction": "Days since prior category activity, capped at 365."
+  },
+  "splitStrategy": "chronological 70/15/15",
+  "neutralRowsExcluded": true,
+  "trainingDurationSeconds": 3.127,
+  "trainedAt": "2026-07-21T22:58:54.553509+00:00"
+}

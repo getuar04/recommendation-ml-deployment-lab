@@ -1,0 +1,12 @@
+apiVersion: v2
+name: recommendation-ml-service-lab
+description: >-
+  Minimal LOCAL Helm chart for the recommendation-ml-service deployment lab
+  (Docker Desktop Kubernetes only, namespace rms-lab). Reproduces current
+  deployment mechanics -- replicaCount, container port, Secret-based env
+  injection, and the existing readiness/liveness probe behavior -- without any
+  dependency on the company's private Helm chart repository. Not published or
+  used outside this local lab.
+type: application
+version: 0.1.0
+appVersion: "1.0.0"

@@ -1,0 +1,488 @@
+{
+  "experimentId": "comparative-entertainment-v1",
+  "runId": "7b1797648c5b4778b1f70b63957080c3",
+  "modelType": "VIDEO",
+  "reportKind": "COMPARATIVE_TRAINING",
+  "status": "SUCCEEDED",
+  "datasetVersion": "comparative-entertainment-v1",
+  "synthetic": true,
+  "startedAt": "2026-08-03T08:52:29.315363+00:00",
+  "completedAt": "2026-08-03T08:52:43.869711+00:00",
+  "totalExperimentSeconds": 14.558,
+  "datasetName": "comparative-entertainment-v1",
+  "datasetProvenance": "synthetic (app.experiments.comparative_dataset_generation)",
+  "dominantCategory": "COMEDY",
+  "categoryMappingNote": "MOVIES/ENTERTAINMENT is not a supported category in this repository; COMEDY is used as the closest existing supported category.",
+  "categoryWeightsTarget": {
+    "COMEDY": 0.8,
+    "MUSIC": 0.1,
+    "NEWS": 0.1
+  },
+  "categoryDistributionRealized": {
+    "COMEDY": 0.8147,
+    "MUSIC": 0.104,
+    "NEWS": 0.0813
+  },
+  "dataset": {
+    "totalInteractions": 3973,
+    "labelledSamples": 1829,
+    "neutralRowsExcluded": 2144,
+    "positiveSamples": 1309,
+    "negativeSamples": 520,
+    "positiveRatio": 0.7157,
+    "negativeRatio": 0.2843,
+    "uniqueUsers": 60,
+    "uniqueContents": 100,
+    "uniqueCreators": 12,
+    "earliestTimestamp": "2026-05-05T23:31:44.940827+00:00",
+    "latestTimestamp": "2026-08-03T08:21:37.940827+00:00"
+  },
+  "algorithm": "LogisticRegression",
+  "algorithmHyperparameters": {
+    "C": 1.0,
+    "class_weight": "balanced",
+    "dual": false,
+    "fit_intercept": true,
+    "intercept_scaling": 1,
+    "l1_ratio": 0.0,
+    "max_iter": 1000,
+    "n_jobs": null,
+    "penalty": "deprecated",
+    "random_state": 42,
+    "solver": "lbfgs",
+    "tol": 0.0001,
+    "verbose": 0,
+    "warm_start": false
+  },
+  "datasetGenerationSeed": 20260805,
+  "modelRandomState": 42,
+  "modelComparison": {
+    "LogisticRegression": {
+      "accuracy": 0.610526,
+      "precision": 0.767742,
+      "recall": 0.613402,
+      "f1Score": 0.681948,
+      "rocAuc": 0.648295,
+      "prAuc": 0.74039,
+      "brierScore": 0.23563,
+      "logLoss": 0.664191,
+      "decisionThreshold": 0.5,
+      "positiveClassRate": 0.680702,
+      "predictedPositiveRate": 0.54386,
+      "confusionMatrix": {
+        "truePositive": 119,
+        "falsePositive": 36,
+        "trueNegative": 55,
+        "falseNegative": 75
+      },
+      "calibrationBins": [
+        {
+          "binLower": 0.0,
+          "binUpper": 0.1,
+          "count": 7,
+          "meanPredicted": 0.069339,
+          "meanActual": 0.142857
+        },
+        {
+          "binLower": 0.1,
+          "binUpper": 0.2,
+          "count": 19,
+          "meanPredicted": 0.137191,
+          "meanActual": 0.157895
+        },
+        {
+          "binLower": 0.2,
+          "binUpper": 0.3,
+          "count": 20,
+          "meanPredicted": 0.241816,
+          "meanActual": 0.35
+        },
+        {
+          "binLower": 0.3,
+          "binUpper": 0.4,
+          "count": 24,
+          "meanPredicted": 0.361346,
+          "meanActual": 0.875
+        },
+        {
+          "binLower": 0.4,
+          "binUpper": 0.5,
+          "count": 60,
+          "meanPredicted": 0.457689,
+          "meanActual": 0.716667
+        },
+        {
+          "binLower": 0.5,
+          "binUpper": 0.6,
+          "count": 88,
+          "meanPredicted": 0.549604,
+          "meanActual": 0.761364
+        },
+        {
+          "binLower": 0.6,
+          "binUpper": 0.7,
+          "count": 56,
+          "meanPredicted": 0.639879,
+          "meanActual": 0.803571
+        },
+        {
+          "binLower": 0.7,
+          "binUpper": 0.8,
+          "count": 11,
+          "meanPredicted": 0.722244,
+          "meanActual": 0.636364
+        },
+        {
+          "binLower": 0.8,
+          "binUpper": 0.9,
+          "count": 0,
+          "meanPredicted": null,
+          "meanActual": null
+        },
+        {
+          "binLower": 0.9,
+          "binUpper": 1.0,
+          "count": 0,
+          "meanPredicted": null,
+          "meanActual": null
+        }
+      ],
+      "precisionAt5": 0.682171,
+      "precisionAt10": 0.682171,
+      "recallAt10": 1.0,
+      "ndcgAt10": 0.937501,
+      "mrr": 0.921053,
+      "evaluatedCandidateGroups": 43,
+      "groupDiagnostics": {
+        "totalGroups": 237,
+        "evaluatedGroups": 43,
+        "groupsSkippedTooSmall": 194,
+        "groupsWithoutPositives": 5,
+        "averageGroupSize": 2.1163,
+        "minGroupSize": 2,
+        "maxGroupSize": 3,
+        "p50GroupSize": 2.0,
+        "p90GroupSize": 2.8
+      }
+    }
+  },
+  "selectedModel": "LogisticRegression",
+  "modelVersion": "recommendation-poc-20260803085243",
+  "trainingSamples": 727,
+  "modelSelectionSamples": 285,
+  "calibrationSamples": 264,
+  "thresholdTuningSamples": 189,
+  "testSamples": 364,
+  "trainingDurationSeconds": 13.64,
+  "decisionThreshold": 0.45318212743134006,
+  "metrics": {
+    "accuracy": 0.711538,
+    "precision": 0.709497,
+    "recall": 0.996078,
+    "f1Score": 0.828711,
+    "rocAuc": 0.566289,
+    "prAuc": 0.752371,
+    "brierScore": 0.20555,
+    "logLoss": 0.601859,
+    "decisionThreshold": 0.453182,
+    "positiveClassRate": 0.700549,
+    "predictedPositiveRate": 0.983516,
+    "confusionMatrix": {
+      "truePositive": 254,
+      "falsePositive": 104,
+      "trueNegative": 5,
+      "falseNegative": 1
+    },
+    "calibrationBins": [
+      {
+        "binLower": 0.0,
+        "binUpper": 0.1,
+        "count": 0,
+        "meanPredicted": null,
+        "meanActual": null
+      },
+      {
+        "binLower": 0.1,
+        "binUpper": 0.2,
+        "count": 0,
+        "meanPredicted": null,
+        "meanActual": null
+      },
+      {
+        "binLower": 0.2,
+        "binUpper": 0.3,
+        "count": 0,
+        "meanPredicted": null,
+        "meanActual": null
+      },
+      {
+        "binLower": 0.3,
+        "binUpper": 0.4,
+        "count": 2,
+        "meanPredicted": 0.382816,
+        "meanActual": 0.0
+      },
+      {
+        "binLower": 0.4,
+        "binUpper": 0.5,
+        "count": 7,
+        "meanPredicted": 0.45755,
+        "meanActual": 0.285714
+      },
+      {
+        "binLower": 0.5,
+        "binUpper": 0.6,
+        "count": 24,
+        "meanPredicted": 0.552802,
+        "meanActual": 0.583333
+      },
+      {
+        "binLower": 0.6,
+        "binUpper": 0.7,
+        "count": 40,
+        "meanPredicted": 0.656662,
+        "meanActual": 0.75
+      },
+      {
+        "binLower": 0.7,
+        "binUpper": 0.8,
+        "count": 249,
+        "meanPredicted": 0.755267,
+        "meanActual": 0.706827
+      },
+      {
+        "binLower": 0.8,
+        "binUpper": 0.9,
+        "count": 42,
+        "meanPredicted": 0.816424,
+        "meanActual": 0.785714
+      },
+      {
+        "binLower": 0.9,
+        "binUpper": 1.0,
+        "count": 0,
+        "meanPredicted": null,
+        "meanActual": null
+      }
+    ],
+    "precisionAt5": 0.703704,
+    "precisionAt10": 0.703704,
+    "recallAt10": 1.0,
+    "ndcgAt10": 0.901204,
+    "mrr": 0.869919,
+    "evaluatedCandidateGroups": 45,
+    "groupDiagnostics": {
+      "totalGroups": 314,
+      "evaluatedGroups": 45,
+      "groupsSkippedTooSmall": 269,
+      "groupsWithoutPositives": 4,
+      "averageGroupSize": 2.1111,
+      "minGroupSize": 2,
+      "maxGroupSize": 3,
+      "p50GroupSize": 2.0,
+      "p90GroupSize": 2.6
+    },
+    "bootstrapConfidenceIntervals": {
+      "accuracy": [
+        0.664766,
+        0.755632
+      ],
+      "precision": [
+        0.6609,
+        0.756322
+      ],
+      "recall": [
+        0.985119,
+        1.0
+      ],
+      "f1Score": [
+        0.794527,
+        0.858552
+      ],
+      "rocAuc": [
+        0.503876,
+        0.625743
+      ]
+    }
+  },
+  "rankingMetrics": {
+    "precisionAt5": 0.703704,
+    "recallAt10": 1.0,
+    "ndcgAt10": 0.901204
+  },
+  "artifactChecksum": "2bba075296a77e44da76ffa5f572cef5576a0c228fdd255ebba893997f0e6d17",
+  "modelStatus": {
+    "status": "READY",
+    "modelVersion": "recommendation-poc-20260803085243",
+    "selectedModel": "LogisticRegression",
+    "trainedAt": "2026-08-03T08:52:43.561811+00:00"
+  },
+  "fixedScenario": {
+    "userId": "comparative-fixed-test-user",
+    "limit": 10,
+    "candidateCategories": [
+      "COMEDY",
+      "FASHION",
+      "FITNESS",
+      "FOOD",
+      "GAMING",
+      "MUSIC",
+      "NEWS",
+      "SPORT",
+      "TECH",
+      "TRAVEL"
+    ],
+    "candidateCount": 13
+  },
+  "recommendations": {
+    "userId": "comparative-fixed-test-user",
+    "modelVersion": "recommendation-poc-20260803085243",
+    "strategy": "COLD_START",
+    "interactionCount": 0,
+    "recommendations": [
+      {
+        "contentId": "fixed-cand-comedy-1",
+        "category": "COMEDY",
+        "score": 0.808695,
+        "rank": 1,
+        "reason": "FOLLOWED_CREATOR"
+      },
+      {
+        "contentId": "fixed-cand-comedy-2",
+        "category": "COMEDY",
+        "score": 0.756486,
+        "rank": 2,
+        "reason": "EXPLORATION"
+      },
+      {
+        "contentId": "fixed-cand-fashion-1",
+        "category": "FASHION",
+        "score": 0.709967,
+        "rank": 3,
+        "reason": "EXPLORATION"
+      },
+      {
+        "contentId": "fixed-cand-fitness-1",
+        "category": "FITNESS",
+        "score": 0.708622,
+        "rank": 4,
+        "reason": "EXPLORATION"
+      },
+      {
+        "contentId": "fixed-cand-travel-1",
+        "category": "TRAVEL",
+        "score": 0.707996,
+        "rank": 5,
+        "reason": "EXPLORATION"
+      },
+      {
+        "contentId": "fixed-cand-food-1",
+        "category": "FOOD",
+        "score": 0.706826,
+        "rank": 6,
+        "reason": "EXPLORATION"
+      },
+      {
+        "contentId": "fixed-cand-tech-1",
+        "category": "TECH",
+        "score": 0.705707,
+        "rank": 7,
+        "reason": "EXPLORATION"
+      },
+      {
+        "contentId": "fixed-cand-gaming-1",
+        "category": "GAMING",
+        "score": 0.705055,
+        "rank": 8,
+        "reason": "EXPLORATION"
+      },
+      {
+        "contentId": "fixed-cand-sport-1",
+        "category": "SPORT",
+        "score": 0.70331,
+        "rank": 9,
+        "reason": "POPULAR_CONTENT"
+      },
+      {
+        "contentId": "fixed-cand-music-2",
+        "category": "MUSIC",
+        "score": 0.693289,
+        "rank": 10,
+        "reason": "EXPLORATION"
+      }
+    ]
+  },
+  "top10": [
+    {
+      "contentId": "fixed-cand-comedy-1",
+      "category": "COMEDY",
+      "score": 0.808695,
+      "rank": 1,
+      "reason": "FOLLOWED_CREATOR"
+    },
+    {
+      "contentId": "fixed-cand-comedy-2",
+      "category": "COMEDY",
+      "score": 0.756486,
+      "rank": 2,
+      "reason": "EXPLORATION"
+    },
+    {
+      "contentId": "fixed-cand-fashion-1",
+      "category": "FASHION",
+      "score": 0.709967,
+      "rank": 3,
+      "reason": "EXPLORATION"
+    },
+    {
+      "contentId": "fixed-cand-fitness-1",
+      "category": "FITNESS",
+      "score": 0.708622,
+      "rank": 4,
+      "reason": "EXPLORATION"
+    },
+    {
+      "contentId": "fixed-cand-travel-1",
+      "category": "TRAVEL",
+      "score": 0.707996,
+      "rank": 5,
+      "reason": "EXPLORATION"
+    },
+    {
+      "contentId": "fixed-cand-food-1",
+      "category": "FOOD",
+      "score": 0.706826,
+      "rank": 6,
+      "reason": "EXPLORATION"
+    },
+    {
+      "contentId": "fixed-cand-tech-1",
+      "category": "TECH",
+      "score": 0.705707,
+      "rank": 7,
+      "reason": "EXPLORATION"
+    },
+    {
+      "contentId": "fixed-cand-gaming-1",
+      "category": "GAMING",
+      "score": 0.705055,
+      "rank": 8,
+      "reason": "EXPLORATION"
+    },
+    {
+      "contentId": "fixed-cand-sport-1",
+      "category": "SPORT",
+      "score": 0.70331,
+      "rank": 9,
+      "reason": "POPULAR_CONTENT"
+    },
+    {
+      "contentId": "fixed-cand-music-2",
+      "category": "MUSIC",
+      "score": 0.693289,
+      "rank": 10,
+      "reason": "EXPLORATION"
+    }
+  ],
+  "_reportPath": "/app/experiments/comparative/comparative-entertainment-v1/video-7b1797648c5b4778b1f70b63957080c3.json"
+}

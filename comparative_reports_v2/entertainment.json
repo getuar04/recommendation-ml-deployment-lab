@@ -1,0 +1,549 @@
+{
+  "experimentId": "comparative-entertainment-v2",
+  "runId": "26487ff4fa724f018e61f5ae6aaee926",
+  "modelType": "VIDEO",
+  "reportKind": "COMPARATIVE_TRAINING_V2",
+  "status": "SUCCEEDED",
+  "experimentVersion": "v2",
+  "datasetVersion": "comparative-entertainment-v2",
+  "synthetic": true,
+  "startedAt": "2026-08-03T11:12:55.589743+00:00",
+  "completedAt": "2026-08-03T11:13:03.760691+00:00",
+  "totalExperimentSeconds": 8.171,
+  "algorithm": "LogisticRegression",
+  "algorithmHyperparameters": {
+    "C": 1.0,
+    "class_weight": "balanced",
+    "dual": false,
+    "fit_intercept": true,
+    "intercept_scaling": 1,
+    "l1_ratio": 0.0,
+    "max_iter": 1000,
+    "n_jobs": null,
+    "penalty": "deprecated",
+    "random_state": 42,
+    "solver": "lbfgs",
+    "tol": 0.0001,
+    "verbose": 0,
+    "warm_start": false
+  },
+  "datasetGenerationSeed": 20260805,
+  "modelRandomState": 42,
+  "featureNames": [
+    "category",
+    "category_affinity",
+    "has_category_history",
+    "average_category_watch_percentage",
+    "recent_category_watch_percentage",
+    "category_completion_rate",
+    "recent_category_completion_rate",
+    "category_positive_count",
+    "category_negative_count",
+    "category_interaction_count",
+    "has_creator_history",
+    "creator_interaction_count",
+    "creator_completion_rate",
+    "creator_followed",
+    "user_total_interaction_count",
+    "content_popularity_score",
+    "content_age_hours",
+    "already_seen",
+    "hour_of_day",
+    "days_since_last_category_interaction"
+  ],
+  "splitStrategy": "5-way chronological split: train/modelSelection/calibration/thresholdTuning/test are five distinct, non-overlapping partitions.",
+  "splitLifecycleUsedFallback": false,
+  "fixedScenario": {
+    "userId": "comparative-fixed-test-user",
+    "limit": 10,
+    "candidateCategories": [
+      "COMEDY",
+      "FASHION",
+      "FITNESS",
+      "FOOD",
+      "GAMING",
+      "MUSIC",
+      "NEWS",
+      "SPORT",
+      "TECH",
+      "TRAVEL"
+    ],
+    "candidateCount": 10
+  },
+  "datasetName": "comparative-entertainment-v2",
+  "datasetProvenance": "synthetic (app.experiments.comparative_dataset_generation, v2: fixed reference timestamp + deterministic post-generation class-balance stratification)",
+  "dominantCategory": "COMEDY",
+  "categoryMappingNote": "MOVIES/ENTERTAINMENT is not a supported category in this repository; COMEDY is used as the closest existing supported category.",
+  "categoryWeightsTarget": {
+    "COMEDY": 0.8,
+    "MUSIC": 0.1,
+    "NEWS": 0.1
+  },
+  "categoryDistributionRealized": {
+    "COMEDY": 0.8022,
+    "MUSIC": 0.1078,
+    "NEWS": 0.09
+  },
+  "dataset": {
+    "totalInteractions": 3044,
+    "labelledSamples": 900,
+    "neutralRowsExcluded": 2144,
+    "positiveSamples": 450,
+    "negativeSamples": 450,
+    "positiveRatio": 0.5,
+    "negativeRatio": 0.5,
+    "uniqueUsers": 60,
+    "uniqueContents": 100,
+    "uniqueCreators": 12,
+    "earliestTimestamp": "2026-05-03T14:39:36+00:00",
+    "latestTimestamp": "2026-07-31T23:29:29+00:00"
+  },
+  "modelComparison": {
+    "LogisticRegression": {
+      "accuracy": 0.592593,
+      "precision": 0.546667,
+      "recall": 0.66129,
+      "f1Score": 0.59854,
+      "rocAuc": 0.606275,
+      "prAuc": 0.491855,
+      "brierScore": 0.238688,
+      "logLoss": 0.670626,
+      "decisionThreshold": 0.5,
+      "positiveClassRate": 0.459259,
+      "predictedPositiveRate": 0.555556,
+      "confusionMatrix": {
+        "truePositive": 41,
+        "falsePositive": 34,
+        "trueNegative": 39,
+        "falseNegative": 21
+      },
+      "calibrationBins": [
+        {
+          "binLower": 0.0,
+          "binUpper": 0.1,
+          "count": 7,
+          "meanPredicted": 0.087623,
+          "meanActual": 0.142857
+        },
+        {
+          "binLower": 0.1,
+          "binUpper": 0.2,
+          "count": 13,
+          "meanPredicted": 0.128779,
+          "meanActual": 0.153846
+        },
+        {
+          "binLower": 0.2,
+          "binUpper": 0.3,
+          "count": 10,
+          "meanPredicted": 0.242567,
+          "meanActual": 0.1
+        },
+        {
+          "binLower": 0.3,
+          "binUpper": 0.4,
+          "count": 8,
+          "meanPredicted": 0.325636,
+          "meanActual": 0.625
+        },
+        {
+          "binLower": 0.4,
+          "binUpper": 0.5,
+          "count": 22,
+          "meanPredicted": 0.447488,
+          "meanActual": 0.545455
+        },
+        {
+          "binLower": 0.5,
+          "binUpper": 0.6,
+          "count": 36,
+          "meanPredicted": 0.552688,
+          "meanActual": 0.694444
+        },
+        {
+          "binLower": 0.6,
+          "binUpper": 0.7,
+          "count": 32,
+          "meanPredicted": 0.652537,
+          "meanActual": 0.4375
+        },
+        {
+          "binLower": 0.7,
+          "binUpper": 0.8,
+          "count": 7,
+          "meanPredicted": 0.734319,
+          "meanActual": 0.285714
+        },
+        {
+          "binLower": 0.8,
+          "binUpper": 0.9,
+          "count": 0,
+          "meanPredicted": null,
+          "meanActual": null
+        },
+        {
+          "binLower": 0.9,
+          "binUpper": 1.0,
+          "count": 0,
+          "meanPredicted": null,
+          "meanActual": null
+        }
+      ],
+      "precisionAt5": 0.483333,
+      "precisionAt10": 0.483333,
+      "recallAt10": 1.0,
+      "ndcgAt10": 0.907732,
+      "mrr": 0.875,
+      "evaluatedCandidateGroups": 10,
+      "groupDiagnostics": {
+        "totalGroups": 124,
+        "evaluatedGroups": 10,
+        "groupsSkippedTooSmall": 114,
+        "groupsWithoutPositives": 2,
+        "averageGroupSize": 2.1,
+        "minGroupSize": 2,
+        "maxGroupSize": 3,
+        "p50GroupSize": 2.0,
+        "p90GroupSize": 2.1
+      }
+    }
+  },
+  "selectedModel": "LogisticRegression",
+  "modelVersion": "recommendation-poc-20260803111303",
+  "trainingSamples": 360,
+  "modelSelectionSamples": 135,
+  "calibrationSamples": 135,
+  "thresholdTuningSamples": 90,
+  "testSamples": 180,
+  "trainingDurationSeconds": 7.154,
+  "decisionThreshold": 0.268970231253456,
+  "metrics": {
+    "accuracy": 0.544444,
+    "precision": 0.544444,
+    "recall": 1.0,
+    "f1Score": 0.705036,
+    "rocAuc": 0.537208,
+    "prAuc": 0.564812,
+    "brierScore": 0.249852,
+    "logLoss": 0.693825,
+    "decisionThreshold": 0.26897,
+    "positiveClassRate": 0.544444,
+    "predictedPositiveRate": 1.0,
+    "confusionMatrix": {
+      "truePositive": 98,
+      "falsePositive": 82,
+      "trueNegative": 0,
+      "falseNegative": 0
+    },
+    "calibrationBins": [
+      {
+        "binLower": 0.0,
+        "binUpper": 0.1,
+        "count": 0,
+        "meanPredicted": null,
+        "meanActual": null
+      },
+      {
+        "binLower": 0.1,
+        "binUpper": 0.2,
+        "count": 0,
+        "meanPredicted": null,
+        "meanActual": null
+      },
+      {
+        "binLower": 0.2,
+        "binUpper": 0.3,
+        "count": 3,
+        "meanPredicted": 0.292885,
+        "meanActual": 0.333333
+      },
+      {
+        "binLower": 0.3,
+        "binUpper": 0.4,
+        "count": 22,
+        "meanPredicted": 0.347755,
+        "meanActual": 0.5
+      },
+      {
+        "binLower": 0.4,
+        "binUpper": 0.5,
+        "count": 27,
+        "meanPredicted": 0.446381,
+        "meanActual": 0.407407
+      },
+      {
+        "binLower": 0.5,
+        "binUpper": 0.6,
+        "count": 110,
+        "meanPredicted": 0.554185,
+        "meanActual": 0.581818
+      },
+      {
+        "binLower": 0.6,
+        "binUpper": 0.7,
+        "count": 16,
+        "meanPredicted": 0.617438,
+        "meanActual": 0.6875
+      },
+      {
+        "binLower": 0.7,
+        "binUpper": 0.8,
+        "count": 2,
+        "meanPredicted": 0.742333,
+        "meanActual": 0.0
+      },
+      {
+        "binLower": 0.8,
+        "binUpper": 0.9,
+        "count": 0,
+        "meanPredicted": null,
+        "meanActual": null
+      },
+      {
+        "binLower": 0.9,
+        "binUpper": 1.0,
+        "count": 0,
+        "meanPredicted": null,
+        "meanActual": null
+      }
+    ],
+    "precisionAt5": 0.578431,
+    "precisionAt10": 0.578431,
+    "recallAt10": 1.0,
+    "ndcgAt10": 0.876977,
+    "mrr": 0.833333,
+    "evaluatedCandidateGroups": 17,
+    "groupDiagnostics": {
+      "totalGroups": 162,
+      "evaluatedGroups": 17,
+      "groupsSkippedTooSmall": 145,
+      "groupsWithoutPositives": 2,
+      "averageGroupSize": 2.0588,
+      "minGroupSize": 2,
+      "maxGroupSize": 3,
+      "p50GroupSize": 2.0,
+      "p90GroupSize": 2.0
+    },
+    "bootstrapConfidenceIntervals": {
+      "accuracy": [
+        0.472222,
+        0.611111
+      ],
+      "precision": [
+        0.472222,
+        0.611111
+      ],
+      "recall": [
+        1.0,
+        1.0
+      ],
+      "f1Score": [
+        0.641509,
+        0.758621
+      ],
+      "rocAuc": [
+        0.459607,
+        0.623934
+      ]
+    }
+  },
+  "rankingMetrics": {
+    "precisionAt5": 0.578431,
+    "recallAt10": 1.0,
+    "ndcgAt10": 0.876977
+  },
+  "artifactChecksum": "61e43e2c80a230391794e4ed0be135ba7b0d2c95833da123fe6f81e74f331c1c",
+  "modelStatus": {
+    "status": "READY",
+    "modelVersion": "recommendation-poc-20260803111303",
+    "selectedModel": "LogisticRegression",
+    "trainedAt": "2026-08-03T11:13:03.283754+00:00"
+  },
+  "rawModelScores": {
+    "fixed-cand-primary-food": 0.4831633618975199,
+    "fixed-cand-primary-sport": 0.4831633618975199,
+    "fixed-cand-primary-music": 0.4805629386636994,
+    "fixed-cand-primary-tech": 0.4831633618975199,
+    "fixed-cand-primary-gaming": 0.4831633618975199,
+    "fixed-cand-primary-travel": 0.4831633618975199,
+    "fixed-cand-primary-comedy": 0.5647862401113429,
+    "fixed-cand-primary-news": 0.4004584173043353,
+    "fixed-cand-primary-fashion": 0.4831633618975199,
+    "fixed-cand-primary-fitness": 0.4831633618975199
+  },
+  "primaryScenario": {
+    "response": {
+      "userId": "comparative-fixed-test-user",
+      "modelVersion": "recommendation-poc-20260803111303",
+      "strategy": "COLD_START",
+      "interactionCount": 0,
+      "recommendations": [
+        {
+          "contentId": "fixed-cand-primary-comedy",
+          "category": "COMEDY",
+          "score": 0.564786,
+          "rank": 1,
+          "reason": "EXPLORATION"
+        },
+        {
+          "contentId": "fixed-cand-primary-food",
+          "category": "FOOD",
+          "score": 0.483163,
+          "rank": 2,
+          "reason": "EXPLORATION"
+        },
+        {
+          "contentId": "fixed-cand-primary-sport",
+          "category": "SPORT",
+          "score": 0.483163,
+          "rank": 3,
+          "reason": "EXPLORATION"
+        },
+        {
+          "contentId": "fixed-cand-primary-tech",
+          "category": "TECH",
+          "score": 0.483163,
+          "rank": 4,
+          "reason": "EXPLORATION"
+        },
+        {
+          "contentId": "fixed-cand-primary-gaming",
+          "category": "GAMING",
+          "score": 0.483163,
+          "rank": 5,
+          "reason": "EXPLORATION"
+        },
+        {
+          "contentId": "fixed-cand-primary-travel",
+          "category": "TRAVEL",
+          "score": 0.483163,
+          "rank": 6,
+          "reason": "EXPLORATION"
+        },
+        {
+          "contentId": "fixed-cand-primary-fashion",
+          "category": "FASHION",
+          "score": 0.483163,
+          "rank": 7,
+          "reason": "EXPLORATION"
+        },
+        {
+          "contentId": "fixed-cand-primary-fitness",
+          "category": "FITNESS",
+          "score": 0.483163,
+          "rank": 8,
+          "reason": "EXPLORATION"
+        },
+        {
+          "contentId": "fixed-cand-primary-music",
+          "category": "MUSIC",
+          "score": 0.480563,
+          "rank": 9,
+          "reason": "EXPLORATION"
+        },
+        {
+          "contentId": "fixed-cand-primary-news",
+          "category": "NEWS",
+          "score": 0.400458,
+          "rank": 10,
+          "reason": "EXPLORATION"
+        }
+      ]
+    },
+    "rawModelScores": {
+      "fixed-cand-primary-food": 0.4831633618975199,
+      "fixed-cand-primary-sport": 0.4831633618975199,
+      "fixed-cand-primary-music": 0.4805629386636994,
+      "fixed-cand-primary-tech": 0.4831633618975199,
+      "fixed-cand-primary-gaming": 0.4831633618975199,
+      "fixed-cand-primary-travel": 0.4831633618975199,
+      "fixed-cand-primary-comedy": 0.5647862401113429,
+      "fixed-cand-primary-news": 0.4004584173043353,
+      "fixed-cand-primary-fashion": 0.4831633618975199,
+      "fixed-cand-primary-fitness": 0.4831633618975199
+    },
+    "note": "Symmetric candidates (identical popularity/age/creatorFollowed=false/alreadySeen=false, one per category) -- the only scenario used to compute the ML-learning verdict, via rawModelScores."
+  },
+  "secondaryScenario": {
+    "response": {
+      "userId": "comparative-fixed-test-user",
+      "modelVersion": "recommendation-poc-20260803111303",
+      "strategy": "COLD_START",
+      "interactionCount": 0,
+      "recommendations": [
+        {
+          "contentId": "fixed-cand-comedy-1",
+          "category": "COMEDY",
+          "score": 0.810321,
+          "rank": 1,
+          "reason": "FOLLOWED_CREATOR"
+        },
+        {
+          "contentId": "fixed-cand-comedy-2",
+          "category": "COMEDY",
+          "score": 0.552673,
+          "rank": 2,
+          "reason": "EXPLORATION"
+        },
+        {
+          "contentId": "fixed-cand-fashion-1",
+          "category": "FASHION",
+          "score": 0.490125,
+          "rank": 3,
+          "reason": "EXPLORATION"
+        },
+        {
+          "contentId": "fixed-cand-music-2",
+          "category": "MUSIC",
+          "score": 0.48871,
+          "rank": 4,
+          "reason": "EXPLORATION"
+        },
+        {
+          "contentId": "fixed-cand-fitness-1",
+          "category": "FITNESS",
+          "score": 0.486976,
+          "rank": 5,
+          "reason": "EXPLORATION"
+        },
+        {
+          "contentId": "fixed-cand-travel-1",
+          "category": "TRAVEL",
+          "score": 0.48571,
+          "rank": 6,
+          "reason": "EXPLORATION"
+        },
+        {
+          "contentId": "fixed-cand-food-1",
+          "category": "FOOD",
+          "score": 0.483033,
+          "rank": 7,
+          "reason": "EXPLORATION"
+        },
+        {
+          "contentId": "fixed-cand-tech-1",
+          "category": "TECH",
+          "score": 0.480422,
+          "rank": 8,
+          "reason": "EXPLORATION"
+        },
+        {
+          "contentId": "fixed-cand-gaming-1",
+          "category": "GAMING",
+          "score": 0.478883,
+          "rank": 9,
+          "reason": "EXPLORATION"
+        },
+        {
+          "contentId": "fixed-cand-sport-1",
+          "category": "SPORT",
+          "score": 0.474527,
+          "rank": 10,
+          "reason": "POPULAR_CONTENT"
+        }
+      ]
+    },
+    "note": "Asymmetric candidates (varied popularity/age, one creatorFollowed=true, one alreadySeen=true) -- exercises business-reranking logic only. Excluded from the ML-learning verdict."
+  },
+  "_reportPath": "/app/experiments/comparative/comparative-entertainment-v2/video-26487ff4fa724f018e61f5ae6aaee926.json"
+}

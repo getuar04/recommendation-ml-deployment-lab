@@ -1,0 +1,59 @@
+# PostgreSQL datastore for recommendation-ml-service-lab in the LOCAL deployment lab ONLY
+# (Docker Desktop Kubernetes, namespace `rms-lab`). Lab equivalent of
+# postgresql-values-dev.yaml / postgresql-values-g2r-eks.yaml -- same structure and
+# mechanics, company-bound values replaced with local-only equivalents.
+#
+# This release is platform provisioning, NOT part of the app deploy (same separation as
+# production/dev):
+#   helm upgrade --install rms-lab-postgres \
+#     <local-chart> --namespace rms-lab \
+#     --values deploy/datastores/postgresql-values-lab.yaml --wait --timeout 10m
+#
+# The Secret rms-lab-db must already exist in the namespace with the keys DATABASE_URL,
+# DATABASE_USERNAME and DATABASE_PASSWORD (lab-only placeholder values created locally --
+# never copied from the real .env). Schema objects are created by the app's Alembic
+# migrations, not by the chart -- same as production/dev.
+
+fullnameOverride: rms-lab-postgres
+
+image:
+  registry: docker.io
+  repository: postgres
+  tag: "16"
+  pullPolicy: IfNotPresent
+
+replicaCount: 1
+
+postgresql:
+  database: recommendation_lab
+  username: rms_lab
+  existingSecret: rms-lab-db
+  passwordKey: DATABASE_PASSWORD
+
+persistence:
+  enabled: true
+  # Docker Desktop Kubernetes' built-in default StorageClass -- replaces the company's
+  # gp3/gp3-auto EBS storage classes, which do not exist locally.
+  storageClass: hostpath
+  size: 8Gi
+
+resources:
+  requests:
+    cpu: 250m
+    memory: 512Mi
+  limits:
+    cpu: "1"
+    memory: 1Gi
+
+service:
+  ports:
+    postgresql: 5432
+
+metrics:
+  enabled: false
+  serviceMonitor:
+    enabled: false
+
+backup:
+  enabled: false
+# No platform backup team in the lab; backups stay disabled, same default as production/dev.
