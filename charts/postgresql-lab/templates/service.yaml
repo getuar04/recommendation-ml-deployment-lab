@@ -1,0 +1,18 @@
+# ClusterIP only, reachable in-cluster at <fullname>.rms-lab.svc.cluster.local:5432 --
+# exactly what deploy/values-lab.yaml's DATABASE_URL secret must point at. No external
+# exposure, no LoadBalancer, no company hostname.
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "postgresql-lab.fullname" . }}
+  labels:
+    {{- include "postgresql-lab.labels" . | nindent 4 }}
+spec:
+  type: ClusterIP
+  ports:
+    - name: postgresql
+      port: {{ .Values.service.ports.postgresql }}
+      targetPort: postgresql
+      protocol: TCP
+  selector:
+    {{- include "postgresql-lab.selectorLabels" . | nindent 4 }}

@@ -48,3 +48,7 @@ docs/*.json
 
 # Local test scratch directories
 .already-seen-suite-*/
+
+# Generated LAB-only kubeconfig (jenkins/run-jenkins-lab.ps1) -- copied client-cert data for
+# the local docker-desktop cluster, regenerated on every launch, never a company credential.
+jenkins/.generated/

@@ -1,0 +1,111 @@
+# Reproducible LOCAL Jenkins LAB image for running Jenkins.lab against Docker Desktop
+# Kubernetes (context `docker-desktop`, namespace `rms-lab`). Adds the CLI tooling
+# Jenkins.lab's stages need directly on the controller -- it uses `agent any` (no separate
+# per-stage build-agent containers like the real Jenkinsfile/Jenkins.g2r-eks), so every tool
+# the pipeline shells out to must already be on this image's PATH: git (already present in
+# the base image), python3.12 (this project's pinned runtime -- see the app's own Dockerfile
+# and requirements*.txt), libgomp1 (LightGBM's OpenMP runtime, same dependency the app image
+# and the original Jenkinsfile/Jenkins.g2r-eks Test stage install), the `docker` CLI (talks
+# to the HOST Docker Desktop daemon -- this image never runs dockerd/containerd itself),
+# kubectl and helm.
+#
+# No AWS/ECR/EKS tooling, no company credentials, no company Kubernetes context is ever
+# baked in here. LAB-only.
+#
+# Base pinned by digest (same convention as the app's own Dockerfile). Re-pin deliberately
+# with:
+#   docker pull jenkins/jenkins:lts-jdk21
+#   docker inspect --format '{{index .RepoDigests 0}}' jenkins/jenkins:lts-jdk21
+FROM jenkins/jenkins@sha256:c1e4c349365f6d16d88595b2c5f7e8ff39b8ae1d061f62420bac193b4b9616d0 AS jenkins-lab-base
+
+# Python 3.12 userland, COPIED (not apt-installed) from the exact pinned python:3.12-slim
+# image the application's own Dockerfile already uses. Both images share the same Debian 13
+# ("trixie") base -- verified (`cat /etc/os-release` in both) -- so the copied interpreter
+# and its shared library are glibc/ABI-compatible with this image, with no separate apt
+# install needed. This deliberately avoids Debian trixie's own apt-provided `python3`
+# package: it resolves to 3.13 (one minor ahead of this project's pinned runtime and
+# requirements.txt/requirements-dev.txt lock files -- verified: `apt-cache madison
+# python3.12` returns nothing on trixie) and carries the PEP 668
+# "externally-managed-environment" marker, which blocks the plain `pip install -r
+# requirements.txt` that Jenkins.lab's Test stage already runs (unmodified) as the
+# non-root `jenkins` user. The official python:3.12-slim build has neither problem.
+FROM python:3.12-slim@sha256:229a2c5bfa27522db7815ea81f9bed70af17ccb9de9fc7ad142b1877b5830d36 AS python312
+
+FROM jenkins-lab-base
+USER root
+
+# --- OS packages ---------------------------------------------------------------------
+# git ships in jenkins/jenkins:lts-jdk21 already (verified: git 2.47.3) -- not reinstalled.
+RUN apt-get update \
+    && apt-get install -y --no-install-recommends libgomp1 ca-certificates \
+    && rm -rf /var/lib/apt/lists/*
+
+# --- Python 3.12 (copied from python:3.12-slim, see FROM comment above) ---------------
+COPY --from=python312 /usr/local/bin/python3.12 /usr/local/bin/python3.12-config /usr/local/bin/pip3.12 /usr/local/bin/
+COPY --from=python312 /usr/local/lib/python3.12 /usr/local/lib/python3.12
+COPY --from=python312 /usr/local/lib/libpython3.12.so /usr/local/lib/libpython3.12.so.1.0 /usr/local/lib/libpython3.so /usr/local/lib/
+COPY --from=python312 /usr/local/lib/pkgconfig /usr/local/lib/pkgconfig
+COPY --from=python312 /usr/local/include/python3.12 /usr/local/include/python3.12
+RUN ln -sf /usr/local/bin/python3.12 /usr/local/bin/python3 \
+    && ln -sf /usr/local/bin/python3.12 /usr/local/bin/python \
+    && ln -sf /usr/local/bin/python3.12-config /usr/local/bin/python3-config \
+    && ln -sf /usr/local/bin/python3-config /usr/local/bin/python-config \
+    && ln -sf /usr/local/bin/pip3.12 /usr/local/bin/pip3 \
+    && ln -sf /usr/local/bin/pip3 /usr/local/bin/pip \
+    && ldconfig \
+    # Jenkins.lab's Test stage runs `python -m pip install -r requirements.txt ...` as the
+    # non-root `jenkins` user (Jenkins.lab is never modified to add --user/sudo/root) --
+    # give that user write ownership of the interpreter's own site-packages so the stage's
+    # existing, unmodified pip command can install the project's dependencies directly.
+    && chown -R jenkins:jenkins /usr/local/lib/python3.12 /usr/local/bin/python3.12 /usr/local/bin/pip3.12
+
+# --- Docker CLI ONLY -- no dockerd/containerd/runc, no Docker-in-Docker -----------------
+# This container talks to the HOST's existing Docker Desktop daemon over its socket
+# (bind-mounted at `docker run` time -- see run-jenkins-lab.ps1). Version pinned to match
+# this host's Docker Desktop engine (29.4.0, confirmed via `docker version`) for full
+# client/API compatibility; the tarball's sha256 was computed locally (Docker does not
+# publish a per-file checksum at this URL) and is verified on every build.
+ARG DOCKER_CLI_VERSION=29.4.0
+ARG DOCKER_CLI_SHA256=56c90317a05d86bd84f2bf8d086faefce6f31f82e8c92880de7710dd5f8ce5b7
+RUN curl -fsSL -o /tmp/docker-cli.tgz \
+      "https://download.docker.com/linux/static/stable/x86_64/docker-${DOCKER_CLI_VERSION}.tgz" \
+    && echo "${DOCKER_CLI_SHA256}  /tmp/docker-cli.tgz" | sha256sum -c - \
+    && tar -xzf /tmp/docker-cli.tgz -C /tmp docker/docker \
+    && install -o root -g root -m 0755 /tmp/docker/docker /usr/local/bin/docker \
+    && rm -rf /tmp/docker-cli.tgz /tmp/docker
+
+# --- kubectl ---------------------------------------------------------------------------
+# Matches the local Kubernetes cluster (server verified at v1.34.3 via `kubectl version`).
+ARG KUBECTL_VERSION=v1.34.3
+ARG KUBECTL_SHA256=ab60ca5f0fd60c1eb81b52909e67060e3ba0bd27e55a8ac147cbc2172ff14212
+RUN curl -fsSL -o /tmp/kubectl \
+      "https://dl.k8s.io/release/${KUBECTL_VERSION}/bin/linux/amd64/kubectl" \
+    && echo "${KUBECTL_SHA256}  /tmp/kubectl" | sha256sum -c - \
+    && install -o root -g root -m 0755 /tmp/kubectl /usr/local/bin/kubectl \
+    && rm -f /tmp/kubectl
+
+# --- Helm --------------------------------------------------------------------------------
+# Matches this host's Helm (v4.3.0, confirmed via `helm version` on the host).
+ARG HELM_VERSION=v4.3.0
+ARG HELM_SHA256=86584a54def73570558f66f5111cc53dfed56689637ae32c1201205d494f54fb
+RUN curl -fsSL -o /tmp/helm.tar.gz \
+      "https://get.helm.sh/helm-${HELM_VERSION}-linux-amd64.tar.gz" \
+    && echo "${HELM_SHA256}  /tmp/helm.tar.gz" | sha256sum -c - \
+    && tar -xzf /tmp/helm.tar.gz -C /tmp linux-amd64/helm \
+    && install -o root -g root -m 0755 /tmp/linux-amd64/helm /usr/local/bin/helm \
+    && rm -rf /tmp/helm.tar.gz /tmp/linux-amd64
+
+# --- Non-root access to the Docker Desktop socket ---------------------------------------
+# The Docker Desktop daemon socket (bind-mounted at container start) is owned root:root,
+# mode 660, inside Docker Desktop's own Linux VM -- verified empirically on this host by
+# mounting it into a throwaway container (`ls -la /var/run/docker.sock` -> `srw-rw----
+# root root`). This differs from a native Linux Docker install, which normally exposes a
+# `docker` group with its own GID; Docker Desktop does not. Adding the `jenkins` user to
+# GID 0 as a SUPPLEMENTARY group grants access to that one group-owned socket without
+# making `jenkins` UID 0 or running the whole container as root -- the smallest safe,
+# reproducible fix, baked into the image so it survives every container recreation without
+# a manual `docker exec -u root` step or a runtime flag to remember.
+RUN usermod -aG root jenkins
+
+USER jenkins
+WORKDIR /var/jenkins_home

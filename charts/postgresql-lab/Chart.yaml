@@ -1,0 +1,12 @@
+apiVersion: v2
+name: postgresql-lab
+description: >-
+  Minimal LOCAL Helm chart for the recommendation-ml-service deployment lab's
+  PostgreSQL 16 instance (Docker Desktop Kubernetes only, namespace rms-lab).
+  Hand-written, zero external chart dependency (no Bitnami, no company chart
+  repository). Reads its password only from an existing lab-only Secret
+  (rms-lab-db / DATABASE_PASSWORD) -- never inline. Not published or used
+  outside this local lab.
+type: application
+version: 0.1.0
+appVersion: "16"
