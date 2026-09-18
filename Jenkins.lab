@@ -163,10 +163,48 @@ pipeline {
                     # The k8s.io containerd's PID is a runtime detail of the current Docker
                     # Desktop VM instance -- NEVER hardcoded (not guaranteed stable across a
                     # Docker Desktop restart). find_k8s_containerd_pid.sh re-derives it fresh
-                    # every run and refuses (non-zero exit, nothing on stdout) if it cannot
+                    # every run (via mount-namespace correlation, NOT shim PPid -- a
+                    # containerd-shim-v2 process is always reparented to init, so grouping by
+                    # PPid only ever finds init, proven the hard way in an earlier version of
+                    # this stage) and refuses (non-zero exit, nothing on stdout) if it cannot
                     # identify exactly one unambiguous k8s.io containerd daemon.
-                    K8S_CONTAINERD_PID=$(docker run --rm --pid=host alpine sh -s < scripts/lab/find_k8s_containerd_pid.sh)
+                    #
+                    # Two invocation details below are load-bearing, both proven the hard way:
+                    #   - `docker run` needs `-i`: without it, stdin is never forwarded into
+                    #     the container at all, so `sh -s < script` silently executes an EMPTY
+                    #     script (exit 0, no output, no error) -- a prior version of this
+                    #     stage omitted `-i` and that alone was enough to make
+                    #     K8S_CONTAINERD_PID empty regardless of the discovery script's logic.
+                    #   - the discovery container needs `--cap-add=SYS_PTRACE` (not full
+                    #     --privileged): reading another process's /proc/<pid>/ns/mnt (how
+                    #     shims are correlated with their daemon) requires the same
+                    #     permission as ptrace(2) PTRACE_MODE_READ, which an unprivileged
+                    #     container does not have even when sharing the host pid namespace.
+                    require_numeric_pid() {
+                        case "$1" in
+                            ''|*[!0-9]*)
+                                echo "REFUSING: $2 is not a non-empty numeric PID: '$1'" >&2
+                                exit 1
+                                ;;
+                        esac
+                    }
+
+                    K8S_CONTAINERD_PID=$(docker run --rm -i --pid=host --cap-add=SYS_PTRACE alpine sh -s < scripts/lab/find_k8s_containerd_pid.sh)
+                    require_numeric_pid "${K8S_CONTAINERD_PID}" "discovered Kubernetes containerd PID"
                     echo "OK: identified Kubernetes (k8s.io) containerd daemon at host PID ${K8S_CONTAINERD_PID}."
+
+                    # Verify the candidate actually answers for the k8s.io namespace BEFORE
+                    # risking an import -- fail closed here rather than import into, or fail
+                    # inside, the wrong target.
+                    docker run --rm --privileged --pid=host alpine sh -c "
+                        apk add --no-cache util-linux >/dev/null 2>&1 &&
+                        nsenter --target ${K8S_CONTAINERD_PID} --mount --net --uts --ipc -- \
+                            ctr -n k8s.io images ls >/dev/null
+                    " || {
+                        echo "REFUSING: could not verify PID ${K8S_CONTAINERD_PID} as the Kubernetes (k8s.io) containerd before import -- aborting without importing anything." >&2
+                        exit 1
+                    }
+                    echo "OK: pre-import verification succeeded against PID ${K8S_CONTAINERD_PID}."
 
                     docker save "${IMAGE_REF}" | \
                         docker run --rm -i --privileged --pid=host alpine sh -c "
@@ -176,10 +214,12 @@ pipeline {
                         "
 
                     # Fail closed rather than silently proceeding to Run Migrations if the
-                    # import did not actually land. Re-derive the PID fresh rather than trust
-                    # the value captured above (defends against the Kubernetes containerd
-                    # having restarted mid-stage, however unlikely).
-                    VERIFY_PID=$(docker run --rm --pid=host alpine sh -s < scripts/lab/find_k8s_containerd_pid.sh)
+                    # import did not actually land. Re-derive AND re-validate the PID fresh
+                    # rather than trust the value captured above (Docker Desktop runtime PIDs
+                    # may change, e.g. if the Kubernetes containerd restarted mid-stage).
+                    VERIFY_PID=$(docker run --rm -i --pid=host --cap-add=SYS_PTRACE alpine sh -s < scripts/lab/find_k8s_containerd_pid.sh)
+                    require_numeric_pid "${VERIFY_PID}" "post-import Kubernetes containerd PID"
+
                     docker run --rm --privileged --pid=host alpine sh -c "
                         apk add --no-cache util-linux >/dev/null 2>&1 &&
                         nsenter --target ${VERIFY_PID} --mount --net --uts --ipc -- \
