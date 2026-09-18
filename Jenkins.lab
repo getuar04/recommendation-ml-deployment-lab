@@ -99,13 +99,23 @@ pipeline {
             steps {
                 sh '''
                     set -eu
-                    python -m pip install --no-cache-dir --upgrade pip
-                    python -m pip install --no-cache-dir -r requirements.txt -r requirements-dev.txt
+
+                    # Workspace-local virtualenv: the Jenkins LAB image's system Python lives
+                    # under /usr/local, whose bin/ directory the non-root `jenkins` user does
+                    # not own -- `pip install --upgrade pip` needs to write new console-script
+                    # entry points there, not just modify existing files, so it fails with
+                    # "Permission denied: /usr/local/bin/pip" even though the interpreter
+                    # itself is readable/executable. A venv under the workspace needs no
+                    # write access to /usr/local at all -- no sudo, no root, no --user, and no
+                    # change to the Jenkins image/container.
+                    python -m venv .venv-ci
+                    .venv-ci/bin/python -m pip install --no-cache-dir --upgrade pip
+                    .venv-ci/bin/python -m pip install --no-cache-dir -r requirements.txt -r requirements-dev.txt
 
                     # Forbidden files, Alembic single-head check, dependency-lock consistency,
                     # ruff, mypy and the full pytest suite (SQLite-isolated, no database needed)
                     # -- identical to the production/dev Test stage.
-                    python -m scripts.ci.verify --full
+                    .venv-ci/bin/python -m scripts.ci.verify --full
                 '''
             }
         }
