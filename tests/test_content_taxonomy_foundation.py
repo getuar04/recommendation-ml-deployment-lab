@@ -148,11 +148,11 @@ def test_caller_cannot_override_the_rms_stamped_taxonomy_version_for_inferred_ca
     """Even when RMS's own classifier DOES run (category omitted), a caller-sent
     taxonomyVersion must not override RMS's own stamp -- RMS is unconditionally authoritative
     for this field whenever it has classification evidence at all."""
-    import app.services.content_enrichment_service as enrichment
+    from app.api import content_routes
     from app.ml.content_classifier import ContentClassification
 
     monkeypatch.setattr(
-        enrichment, "infer_category",
+        content_routes, "infer_category",
         lambda *args, **kwargs: ContentClassification("SPORT", 0.9, "MODEL"),
     )
     response = client.post(f"{BASE}/contents", json={
@@ -230,7 +230,7 @@ def test_explicit_category_with_caller_taxonomy_version_still_stores_none(client
     assert response.json()["taxonomyVersion"] is None
 
 
-def test_inferred_category_stamps_the_existing_bootstrap_taxonomy_version(client):
+def test_inferred_category_stamps_the_existing_bootstrap_taxonomy_version(client, monkeypatch):
     import app.services.content_enrichment_service as enrichment
     from app.ml.content_classifier import save_classifier, train_classifier
     from app.ml.content_classifier_data import build_dataframe
@@ -241,8 +241,8 @@ def test_inferred_category_stamps_the_existing_bootstrap_taxonomy_version(client
     tmp = Path(tempfile.mkdtemp())
     model_path, metadata_path = tmp / "clf.joblib", tmp / "clf_metadata.json"
     save_classifier(pipeline, metadata, model_path=model_path, metadata_path=metadata_path)
-    enrichment.CONTENT_CLASSIFIER_MODEL_PATH = model_path
-    enrichment.CONTENT_CLASSIFIER_METADATA_PATH = metadata_path
+    monkeypatch.setattr(enrichment, "CONTENT_CLASSIFIER_MODEL_PATH", model_path)
+    monkeypatch.setattr(enrichment, "CONTENT_CLASSIFIER_METADATA_PATH", metadata_path)
     enrichment._cache.clear()
 
     response = client.post(f"{BASE}/contents", json={
