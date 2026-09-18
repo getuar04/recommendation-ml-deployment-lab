@@ -1,7 +1,8 @@
 # Helm values for the LOCAL deployment lab ONLY (Docker Desktop Kubernetes, context
-# `docker-desktop`, namespace `rms-lab`). This is the lab equivalent of deploy/values-dev.yaml
-# and deploy/values-g2r-eks.yaml -- same structure and mechanics, company-bound values
-# replaced with local-only equivalents. Consumed by `Jenkins.lab` (not executed yet) together
+# `docker-desktop`, namespace `rms-lab`). This is the lab equivalent of the two real
+# deployment-target values files kept elsewhere in this repository for comparison --
+# same structure and mechanics, company-bound values replaced with local-only equivalents.
+# Consumed by `Jenkins.lab` (not executed yet) together
 # with the local chart at charts/recommendation-ml-service-lab -- a minimal, hand-written
 # chart that never contacts or depends on the company's private inturium-helm-charts repo.
 #

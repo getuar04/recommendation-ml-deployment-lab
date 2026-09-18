@@ -1,7 +1,8 @@
 # PostgreSQL datastore for recommendation-ml-service-lab in the LOCAL deployment lab ONLY
-# (Docker Desktop Kubernetes, namespace `rms-lab`). Lab equivalent of
-# postgresql-values-dev.yaml / postgresql-values-g2r-eks.yaml -- same structure and
-# mechanics, company-bound values replaced with local-only equivalents.
+# (Docker Desktop Kubernetes, namespace `rms-lab`). Lab equivalent of the two real
+# deployment-target PostgreSQL values files kept elsewhere in this repository for
+# comparison -- same structure and mechanics, company-bound values replaced with
+# local-only equivalents.
 #
 # This release is platform provisioning, NOT part of the app deploy (same separation as
 # production/dev):
