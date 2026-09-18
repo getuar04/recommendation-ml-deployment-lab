@@ -140,6 +140,59 @@ pipeline {
             }
         }
 
+        stage('Load Image Into Kubernetes Containerd') {
+            steps {
+                sh '''
+                    set -eu
+                    bash scripts/lab/guard_kube_context.sh
+
+                    IMAGE_REF="${IMAGE_REPOSITORY}:${IMAGE_TAG}"
+
+                    # Docker Desktop Kubernetes (context docker-desktop) runs a SEPARATE
+                    # containerd instance (namespace k8s.io, backed by KIND -- see kubelet's
+                    # own --provider-id=kind://... on this node) from the Docker Engine's own
+                    # containerd that the Build stage's `docker build` populates (namespace
+                    # moby). A locally built image is therefore NOT automatically visible to
+                    # kubectl/kubelet here -- proven via `kubectl get node -o json`
+                    # `.status.images` during diagnosis of this LAB's ErrImageNeverPull
+                    # failure. This stage bridges the two by importing the just-built image
+                    # directly into the k8s.io containerd's own image store, so
+                    # `imagePullPolicy: Never` (preserved, never weakened to IfNotPresent/
+                    # Always) succeeds in the next stage instead of ErrImageNeverPull.
+                    #
+                    # The k8s.io containerd's PID is a runtime detail of the current Docker
+                    # Desktop VM instance -- NEVER hardcoded (not guaranteed stable across a
+                    # Docker Desktop restart). find_k8s_containerd_pid.sh re-derives it fresh
+                    # every run and refuses (non-zero exit, nothing on stdout) if it cannot
+                    # identify exactly one unambiguous k8s.io containerd daemon.
+                    K8S_CONTAINERD_PID=$(docker run --rm --pid=host alpine sh -s < scripts/lab/find_k8s_containerd_pid.sh)
+                    echo "OK: identified Kubernetes (k8s.io) containerd daemon at host PID ${K8S_CONTAINERD_PID}."
+
+                    docker save "${IMAGE_REF}" | \
+                        docker run --rm -i --privileged --pid=host alpine sh -c "
+                            apk add --no-cache util-linux >/dev/null 2>&1 &&
+                            nsenter --target ${K8S_CONTAINERD_PID} --mount --net --uts --ipc -- \
+                                ctr -n k8s.io images import -
+                        "
+
+                    # Fail closed rather than silently proceeding to Run Migrations if the
+                    # import did not actually land. Re-derive the PID fresh rather than trust
+                    # the value captured above (defends against the Kubernetes containerd
+                    # having restarted mid-stage, however unlikely).
+                    VERIFY_PID=$(docker run --rm --pid=host alpine sh -s < scripts/lab/find_k8s_containerd_pid.sh)
+                    docker run --rm --privileged --pid=host alpine sh -c "
+                        apk add --no-cache util-linux >/dev/null 2>&1 &&
+                        nsenter --target ${VERIFY_PID} --mount --net --uts --ipc -- \
+                            ctr -n k8s.io images ls
+                    " | grep -F "${IMAGE_REF}" || {
+                        echo "REFUSING: ${IMAGE_REF} is still not visible in the Kubernetes (k8s.io) containerd image store after import -- refusing to proceed to Run Migrations." >&2
+                        exit 1
+                    }
+                    echo "OK: ${IMAGE_REF} confirmed visible to the Kubernetes node's containerd."
+                '''
+            }
+        }
+
         stage('Run Migrations') {
             steps {
                 sh '''
